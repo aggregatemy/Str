@@ -1,0 +1,7 @@
+{
+  "name": "Strażnik Prawa - Monitoring Legislacyjny",
+  "description": "Inteligentna platforma do monitorowania zmian w prawie na podstawie wskazanych serwisów legislacyjnych i rządowych, wykorzystująca model Gemini do analizy i podsumowania nowości prawnych.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
