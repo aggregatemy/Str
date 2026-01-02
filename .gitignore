@@ -11,6 +11,20 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.local
+.env.*.local
+.mcp-debug-tools
+
+# SQLite databases (lokalne środowisko)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Porty i PID (izolacja od innych projektów)
+.port
+*.pid
 
 # Editor directories and files
 .vscode/*

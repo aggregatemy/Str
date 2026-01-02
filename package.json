@@ -1,22 +1,37 @@
 {
-  "name": "strażnik-prawa-medycznego",
+  "name": "straznik-prawa-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "playwright:install": "playwright install"
   },
   "dependencies": {
     "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "@google/genai": "^1.34.0"
+    "react-calendar": "^6.0.0",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@testing-library/react": "^14.1.0",
+    "@testing-library/user-event": "^14.5.0",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-calendar": "^3.9.0",
+    "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/ui": "^1.6.0",
+    "happy-dom": "^12.10.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^1.6.0"
   }
 }

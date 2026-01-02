@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model LegalFact {
+  compositeKey       String   @id                    // Format: "${sourceId}:${docId}:${date}" - NOWY PRIMARY KEY
+  sourceId           String   @default("unknown")    // 'eli-sejm-du', 'rss-zus', 'nfz'
+  docId              String   @default("")           // Unikalny ID dokumentu per źródło
+  ingestMethod       String                          // 'eli', 'rss', 'scraper'
+  
+  eliUri             String?
+  title              String
+  summary            String
+  date               String
+  impact             String
+  category           String
+  legalStatus        String
+  officialRationale  String
+  sourceUrl          String
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([date])
+  @@index([ingestMethod])
+  @@index([sourceId])
+  @@index([impact])
+}

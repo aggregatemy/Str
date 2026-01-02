@@ -8,7 +8,11 @@ export const fetchSystemUpdates = async (
   profile: UserProfileType,
   range: '7d' | '30d' | '90d' = '7d'
 ): Promise<{ updates: LegalUpdate[]; links: GroundingLink[] }> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY nie jest ustawiony');
+  }
+  const ai = new GoogleGenAI({ apiKey });
   const model = 'gemini-3-pro-preview';
 
   // TOTALNA ELIMINACJA INTERPRETACJI
@@ -65,7 +69,7 @@ export const fetchSystemUpdates = async (
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (chunks) {
       chunks.forEach((chunk: any) => {
-        if (chunk.web && chunk.web.uri && (chunk.web.uri.includes('.gov.pl') || chunk.web.uri.includes('.zus.pl') || chunk.web.uri.includes('.nfz.gov.pl'))) {
+        if (chunk.web?.uri && (chunk.web.uri.includes('.gov.pl') || chunk.web.uri.includes('.zus.pl') || chunk.web.uri.includes('.nfz.gov.pl'))) {
           links.push({ uri: chunk.web.uri, title: chunk.web.title || chunk.web.uri });
         }
       });
@@ -79,7 +83,11 @@ export const fetchSystemUpdates = async (
 };
 
 export const generateEmailBriefing = async (updates: LegalUpdate[]): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY nie jest ustawiony');
+  }
+  const ai = new GoogleGenAI({ apiKey });
   const contentSummary = updates.map(u => `DOKUMENT: ${u.title}\nID: ${u.eliUri || u.id}\nTREŚĆ UZASADNIENIA: ${u.officialRationale}\n`).join('\n---\n');
   const prompt = `Sformatuj poniższe dane do surowego zestawienia faktograficznego. 
   Zabrania się dodawania jakiegokolwiek komentarza, wstępu, zakończenia lub analizy.

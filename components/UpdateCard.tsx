@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { LegalUpdate, GroundingLink } from '../types';
+import { LegalUpdate } from '../types';
 
 interface UpdateCardProps {
   updates: LegalUpdate[];
-  links: GroundingLink[];
   loading: boolean;
   onSave?: (update: LegalUpdate) => void;
   isSaved?: (id: string) => boolean;
@@ -21,9 +20,9 @@ const SingleUpdate: React.FC<{
 }> = ({ update, onSave, saved, isSelected, onToggleSelection }) => {
 
   const methodLabel = {
-    eli: 'Protokół ELI API',
+    eli: 'API Sejmu (JSON/ELI)',
     rss: 'Kanał RSS/XML',
-    scraper: 'Silnik Scrapera NFZ'
+    scraper: 'Silnik Scrapera HTML'
   };
 
   const methodBadge = {
@@ -36,11 +35,14 @@ const SingleUpdate: React.FC<{
     <div className={`bg-white border-2 rounded shadow-sm transition-all ${isSelected ? 'border-[#800000]' : 'border-slate-200'}`}>
       <div className="p-8 flex gap-6">
         <div className="pt-2">
+          <label htmlFor={`select-${update.id}`} className="sr-only">Zaznacz dokument</label>
           <input 
+            id={`select-${update.id}`}
             type="checkbox" 
             checked={isSelected} 
             onChange={onToggleSelection}
             className="w-6 h-6 border-slate-300 rounded-none text-[#800000] cursor-pointer"
+            aria-label={`Zaznacz: ${update.title}`}
           />
         </div>
         
@@ -90,11 +92,17 @@ const SingleUpdate: React.FC<{
   );
 };
 
-const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave, isSaved, selectedIds = [], onToggleSelection }) => {
+const UpdateCard: React.FC<UpdateCardProps> = ({ updates, loading, onSave, isSaved, selectedIds = [], onToggleSelection }) => {
   if (loading) {
     return (
       <div className="space-y-6">
-        {[1, 2, 3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded animate-pulse"></div>)}
+        <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+              <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">Pobieranie danych z 10 źródeł...</p>
+              <p className="text-[8px] text-slate-400 font-mono">ELI: Sejm (DU+MP) + 5 ministerstw | RSS: ZUS + CEZ | Scraper: NFZ</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -104,7 +112,13 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave
       <div className="space-y-6">
         {updates.length === 0 ? (
           <div className="text-center py-20 bg-white border-2 border-dashed border-slate-200 rounded">
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Brak nowych danych z ELI/RSS/SCRAPER</p>
+            <div className="flex flex-col items-center gap-4">
+              <i className="fas fa-inbox text-4xl text-slate-300"></i>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Brak nowych danych z ELI/RSS/SCRAPER</p>
+              <p className="text-[9px] text-slate-500 max-w-md">
+                Wszystkie źródła zostały sprawdzone. Nie znaleziono nowych aktów prawnych w wybranym okresie.
+              </p>
+            </div>
           </div>
         ) : (
           updates.map((update) => (
@@ -119,31 +133,6 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave
           ))
         )}
       </div>
-
-      {links.length > 0 && (
-        <div className="bg-slate-900 p-8 rounded shadow-xl">
-          <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.4em] mb-6 flex items-center gap-4">
-            <i className="fas fa-database text-amber-600"></i> Zweryfikowane Punkty Danych
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {links.map((link, idx) => (
-              <a 
-                key={idx} 
-                href={link.uri} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="p-4 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors flex items-center justify-between group"
-              >
-                <div className="flex flex-col truncate pr-4">
-                   <span className="text-[9px] font-black text-slate-200 truncate uppercase">{link.title}</span>
-                   <span className="text-[8px] text-slate-500 font-mono truncate">{link.uri}</span>
-                </div>
-                <i className="fas fa-arrow-up-right-from-square text-slate-600 group-hover:text-amber-500"></i>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
