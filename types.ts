@@ -8,6 +8,7 @@ export interface LegalUpdate {
   impact: 'low' | 'medium' | 'high';
   category: string;
   summary: string;
+  checklist?: string[];
 }
 
 export interface MonitoredSite {
@@ -20,4 +21,11 @@ export interface MonitoredSite {
 export interface GroundingLink {
   uri: string;
   title: string;
+}
+
+export interface DashboardStats {
+  total: number;
+  highImpact: number;
+  mediumImpact: number;
+  lowImpact: number;
 }
