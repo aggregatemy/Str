@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LegalUpdate, GroundingLink } from '../types';
+import { LegalUpdate, GroundingLink, IngestMethod } from '../types';
 
 /**
  * Props dla komponentu UpdateCard.
@@ -61,14 +61,12 @@ const SingleUpdate: React.FC<{
   /**
    * Mapowanie metod ingestii na czytelne etykiety.
    * 
-   * @constant
-   * @type {Object.<IngestMethod, string>}
    * @description Słownik tłumaczący kody metod na pełne nazwy protokołów:
    * - eli → "Protokół ELI API"
    * - rss → "Kanał RSS/XML"
    * - scraper → "Silnik Scrapera NFZ"
    */
-  const methodLabel = {
+  const methodLabel: Record<IngestMethod, string> = {
     eli: 'Protokół ELI API',
     rss: 'Kanał RSS/XML',
     scraper: 'Silnik Scrapera NFZ'
@@ -77,14 +75,12 @@ const SingleUpdate: React.FC<{
   /**
    * Mapowanie metod ingestii na klasy CSS dla badge'ów.
    * 
-   * @constant
-   * @type {Object.<IngestMethod, string>}
    * @description Słownik definiujący kolory badge'ów dla różnych metod:
    * - eli → niebieski (bg-blue-800)
    * - rss → zielony (bg-green-800)
    * - scraper → bursztynowy (bg-amber-700)
    */
-  const methodBadge = {
+  const methodBadge: Record<IngestMethod, string> = {
     eli: 'bg-blue-800 text-white',
     rss: 'bg-green-800 text-white',
     scraper: 'bg-amber-700 text-white'

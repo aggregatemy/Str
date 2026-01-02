@@ -35,8 +35,9 @@ const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
 /**
  * Typ zakresu czasowego filtrowania.
  * 
- * @typedef {'7d' | '30d' | '90d'} ZakresCzasu
- * @description Określa zakres czasowy dla pobierania aktualizacji prawnych:
+ * @description Określa zakres czasowy dla pobierania aktualizacji prawnych.
+ * 
+ * Możliwe wartości:
  * - '7d' - ostatnie 7 dni
  * - '30d' - ostatnie 30 dni
  * - '90d' - ostatnie 90 dni

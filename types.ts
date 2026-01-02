@@ -4,11 +4,11 @@
  * @description Określa rolę użytkownika, która może wpływać na sposób prezentacji danych.
  * W obecnej wersji profil 'legal' jest używany jako domyślny dla wszystkich użytkowników.
  * 
- * @typedef {'director' | 'legal' | 'staff' | 'dev'} UserProfileType
- * @property {string} director - Dyrektor instytucji medycznej
- * @property {string} legal - Radca prawny / prawnik (profil domyślny)
- * @property {string} staff - Pracownik merytoryczny
- * @property {string} dev - Deweloper systemu
+ * Możliwe wartości:
+ * - 'director' - Dyrektor instytucji medycznej
+ * - 'legal' - Radca prawny / prawnik (profil domyślny)
+ * - 'staff' - Pracownik merytoryczny
+ * - 'dev' - Deweloper systemu
  */
 export type UserProfileType = 'director' | 'legal' | 'staff' | 'dev';
 
@@ -18,10 +18,10 @@ export type UserProfileType = 'director' | 'legal' | 'staff' | 'dev';
  * @description Określa sposób ingestii danych prawnych z instytucji państwowych.
  * Każda metoda ma inne charakterystyki techniczne i wymaga dedykowanego parsera.
  * 
- * @typedef {'eli' | 'rss' | 'scraper'} IngestMethod
- * @property {string} eli - Protokół ELI API (European Legislation Identifier) - ISAP
- * @property {string} rss - Strumień RSS/XML (ZUS, CEZ, e-Zdrowie)
- * @property {string} scraper - Backendowy scraper HTML (NFZ)
+ * Możliwe wartości:
+ * - 'eli' - Protokół ELI API (European Legislation Identifier) - ISAP
+ * - 'rss' - Strumień RSS/XML (ZUS, CEZ, e-Zdrowie)
+ * - 'scraper' - Backendowy scraper HTML (NFZ)
  */
 export type IngestMethod = 'eli' | 'rss' | 'scraper';
 
