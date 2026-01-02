@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MonitoredSite, LegalUpdate, DashboardStats, UserProfileType, SystemConfig } from './types';
+import { LegalUpdate, SystemConfig } from './types';
 import { fetchLegalUpdates, fetchELIUpdates, fetchRSSUpdates, fetchNFZUpdates, exportUpdates } from './services/apiService';
 import UpdateCard from './components/UpdateCard';
 
@@ -172,10 +172,10 @@ const App: React.FC = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest mb-2 ${blad.type === 'network' ? 'text-red-800' : blad.type === 'server' ? 'text-orange-800' : 'text-yellow-800'}">Błąd Systemu</h3>
                 <p className="text-[11px] text-slate-700 leading-relaxed mb-4">{blad.message}</p>
                 <div className="flex gap-3">
-                  <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
+                  <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} title="Ponownie załaduj dane" className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
                     <i className="fas fa-redo mr-2"></i>Ponów próbę
                   </button>
-                  <button onClick={() => setBlad(null)} className="px-4 py-2 border-2 border-slate-300 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-100 transition-all">
+                  <button onClick={() => setBlad(null)} title="Zamknij komunikat błędu" className="px-4 py-2 border-2 border-slate-300 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-100 transition-all">
                     Zamknij
                   </button>
                 </div>
@@ -252,7 +252,7 @@ const App: React.FC = () => {
           <div className="bg-white w-full max-w-4xl h-[85vh] flex flex-col border border-slate-300 shadow-2xl rounded-sm">
             <header className="h-16 border-b border-slate-200 px-10 flex items-center justify-between shrink-0 bg-slate-50">
               <h2 className="text-[11px] font-black uppercase text-slate-800 tracking-widest italic">Wyciąg z Dokumentacji Urzędowej</h2>
-              <button onClick={() => setRaportOtwarty(false)} className="text-slate-400 hover:text-slate-900 p-2">
+              <button onClick={() => setRaportOtwarty(false)} title="Zamknij raport" className="text-slate-400 hover:text-slate-900 p-2">
                 <i className="fas fa-times"></i>
               </button>
             </header>
