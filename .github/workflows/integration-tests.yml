@@ -56,4 +56,4 @@ jobs:
           echo "### Integration Test Results 🔧" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Integration tests completed" >> $GITHUB_STEP_SUMMARY
-          echo "Note: E2E test framework not yet configured" >> $GITHUB_STEP_SUMMARY
+          echo "Framework: Playwright with Chromium browser" >> $GITHUB_STEP_SUMMARY

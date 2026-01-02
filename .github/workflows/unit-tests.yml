@@ -52,4 +52,4 @@ jobs:
           echo "### Unit Test Results 🧪" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests completed for Node.js ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
-          echo "Note: Test framework not yet configured" >> $GITHUB_STEP_SUMMARY
+          echo "Framework: Vitest with React Testing Library" >> $GITHUB_STEP_SUMMARY
