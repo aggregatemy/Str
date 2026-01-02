@@ -4,6 +4,19 @@ import { MonitoredSite, GroundingLink, LegalUpdate, DashboardStats, UserProfileT
 import { fetchSystemUpdates, generateEmailBriefing } from './services/geminiService';
 import UpdateCard from './components/UpdateCard';
 
+/**
+ * Domyślna konfiguracja systemu monitorowania.
+ * 
+ * @constant {SystemConfig}
+ * @description Definiuje podstawową konfigurację źródeł danych oraz tematów strategicznych.
+ * Zawiera 4 główne źródła ingestii danych z oficjalnych instytucji państwowych:
+ * - ISAP ELI API - akty prawne z europejskim identyfikatorem
+ * - ZUS RSS - komunikaty Zakładu Ubezpieczeń Społecznych
+ * - CEZ RSS - aktualizacje Centrum e-Zdrowia
+ * - NFZ Scraper - zarządzenia Prezesa Narodowego Funduszu Zdrowia
+ * 
+ * Konfiguracja może być nadpisana przez użytkownika i jest zapisywana w localStorage.
+ */
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
   masterSites: [
     { id: '1', name: 'ISAP ELI (System API)', url: 'https://isap.sejm.gov.pl/api/eli', isActive: true, type: 'eli' },
@@ -19,34 +32,200 @@ const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
   ]
 };
 
+/**
+ * Typ zakresu czasowego filtrowania.
+ * 
+ * @typedef {'7d' | '30d' | '90d'} ZakresCzasu
+ * @description Określa zakres czasowy dla pobierania aktualizacji prawnych:
+ * - '7d' - ostatnie 7 dni
+ * - '30d' - ostatnie 30 dni
+ * - '90d' - ostatnie 90 dni
+ */
 type ZakresCzasu = '7d' | '30d' | '90d';
 
+/**
+ * Główny komponent aplikacji Strażnik Prawa Medycznego.
+ * 
+ * @component
+ * @description Komponent zarządzający całą logiką aplikacji do monitorowania zmian prawnych.
+ * Odpowiada za:
+ * - Pobieranie danych z API Gemini
+ * - Zarządzanie stanem aktualizacji prawnych
+ * - Archiwizację dokumentów w localStorage
+ * - Generowanie raportów faktograficznych
+ * - Zarządzanie konfiguracją źródeł danych
+ * - Interfejs użytkownika z trzema widokami: Główny, Archiwum, Źródła
+ * 
+ * @returns {JSX.Element} Wyrenderowany komponent aplikacji
+ * 
+ * @example
+ * // Komponent jest używany jako główny element aplikacji w index.tsx
+ * <App />
+ */
 const App: React.FC = () => {
+  /**
+   * Stan konfiguracji systemu.
+   * 
+   * @state
+   * @type {[SystemConfig, Function]}
+   * @description Przechowuje konfigurację źródeł danych i tematów strategicznych.
+   * Inicjalizowany z localStorage lub domyślnej konfiguracji. Zmiany są
+   * automatycznie zapisywane w localStorage przez useEffect.
+   */
   const [config, setConfig] = useState<SystemConfig>(() => {
     const saved = localStorage.getItem('straznik_prawa_v13_konfig');
     return saved ? JSON.parse(saved) : KONFIGURACJA_DYNAMICZNA;
   });
 
+  /**
+   * Stan zakresu czasowego filtrowania.
+   * 
+   * @state
+   * @type {[ZakresCzasu, Function]}
+   * @description Określa zakres czasowy dla pobierania danych (7d/30d/90d).
+   * Zmiana zakresu automatycznie wywołuje ponowne pobranie danych.
+   */
   const [zakres, setZakres] = useState<ZakresCzasu>('7d');
+
+  /**
+   * Stan listy aktualizacji prawnych.
+   * 
+   * @state
+   * @type {[LegalUpdate[], Function]}
+   * @description Przechowuje pobrane aktualizacje prawne z API Gemini.
+   * Aktualizowany po każdym pomyślnym pobraniu danych.
+   */
   const [zmiany, setZmiany] = useState<LegalUpdate[]>([]);
+
+  /**
+   * Stan zarchiwizowanych dokumentów.
+   * 
+   * @state
+   * @type {[LegalUpdate[], Function]}
+   * @description Przechowuje dokumenty zapisane przez użytkownika.
+   * Dane są persystowane w localStorage pod kluczem 'zapisane_v13'.
+   */
   const [zapisane, setZapisane] = useState<LegalUpdate[]>(() => {
     const saved = localStorage.getItem('zapisane_v13');
     return saved ? JSON.parse(saved) : [];
   });
   
+  /**
+   * Stan linków weryfikacyjnych (grounding links).
+   * 
+   * @state
+   * @type {[GroundingLink[], Function]}
+   * @description Przechowuje listę źródeł użytych przez Gemini AI do wygenerowania
+   * odpowiedzi. Służy do weryfikacji faktograficznej danych.
+   */
   const [odnosniki, setOdnosniki] = useState<GroundingLink[]>([]);
+
+  /**
+   * Stan ładowania danych.
+   * 
+   * @state
+   * @type {[boolean, Function]}
+   * @description Wskazuje czy trwa pobieranie danych z API.
+   * Używany do wyświetlania stanów ładowania w UI.
+   */
   const [laduje, setLaduje] = useState(false);
+
+  /**
+   * Stan błędu.
+   * 
+   * @state
+   * @type {[string | null, Function]}
+   * @description Przechowuje komunikat błędu jeśli pobieranie danych się nie powiodło.
+   * Null oznacza brak błędu.
+   */
   const [blad, setBlad] = useState<string | null>(null);
+
+  /**
+   * Stan aktywnego widoku.
+   * 
+   * @state
+   * @type {['glowny' | 'archiwum' | 'zrodla', Function]}
+   * @description Określa który widok jest aktualnie wyświetlany:
+   * - 'glowny' - lista nowych aktualizacji prawnych
+   * - 'archiwum' - zarchiwizowane dokumenty
+   * - 'zrodla' - konfiguracja źródeł danych
+   */
   const [widok, setWidok] = useState<'glowny' | 'archiwum' | 'zrodla'>('glowny');
+
+  /**
+   * Stan zaznaczonych dokumentów.
+   * 
+   * @state
+   * @type {[string[], Function]}
+   * @description Przechowuje ID zaznaczonych dokumentów do generowania raportu.
+   * Domyślnie zaznaczone są wszystkie nowo pobrane dokumenty.
+   */
   const [zaznaczone, setZaznaczone] = useState<string[]>([]);
 
+  /**
+   * Stan widoczności okna raportu.
+   * 
+   * @state
+   * @type {[boolean, Function]}
+   * @description Określa czy okno modalne z raportem jest otwarte.
+   */
   const [raportOtwarty, setRaportOtwarty] = useState(false);
+
+  /**
+   * Stan treści wygenerowanego raportu.
+   * 
+   * @state
+   * @type {[string, Function]}
+   * @description Przechowuje wygenerowany tekst raportu faktograficznego.
+   */
   const [trescRaportu, setTrescRaportu] = useState('');
+
+  /**
+   * Stan generowania raportu.
+   * 
+   * @state
+   * @type {[boolean, Function]}
+   * @description Wskazuje czy trwa generowanie raportu przez Gemini AI.
+   */
   const [generujeRaport, setGenerujeRaport] = useState(false);
 
+  /**
+   * Efekt zapisywania konfiguracji do localStorage.
+   * 
+   * @effect
+   * @description Automatycznie zapisuje zmiany konfiguracji do localStorage
+   * pod kluczem 'straznik_prawa_v13_konfig'. Uruchamia się przy każdej zmianie config.
+   */
   useEffect(() => localStorage.setItem('straznik_prawa_v13_konfig', JSON.stringify(config)), [config]);
+
+  /**
+   * Efekt zapisywania zarchiwizowanych dokumentów do localStorage.
+   * 
+   * @effect
+   * @description Automatycznie zapisuje zmiany w archiwum do localStorage
+   * pod kluczem 'zapisane_v13'. Uruchamia się przy każdej zmianie zapisane.
+   */
   useEffect(() => localStorage.setItem('zapisane_v13', JSON.stringify(zapisane)), [zapisane]);
 
+  /**
+   * Funkcja pobierania danych z API.
+   * 
+   * @async
+   * @function pobierzDane
+   * @description Pobiera aktualizacje prawne z aktywnych źródeł przez Gemini AI API.
+   * Proces obejmuje:
+   * 1. Filtrowanie aktywnych źródeł z konfiguracji
+   * 2. Wywołanie fetchSystemUpdates z parametrami
+   * 3. Aktualizacja stanu z pobranymi danymi
+   * 4. Automatyczne zaznaczenie wszystkich nowych dokumentów
+   * 5. Obsługa błędów z komunikatem dla użytkownika
+   * 
+   * @throws {Error} Błąd podczas komunikacji z API lub parsowania danych
+   * 
+   * @example
+   * // Funkcja jest wywoływana automatycznie przez useEffect przy zmianie zakresu
+   * // lub ręcznie przez użytkownika
+   */
   const pobierzDane = async () => {
     setLaduje(true); setBlad(null);
     try {
@@ -61,10 +240,32 @@ const App: React.FC = () => {
     } finally { setLaduje(false); }
   };
 
+  /**
+   * Efekt automatycznego pobierania danych.
+   * 
+   * @effect
+   * @description Pobiera dane z API gdy użytkownik znajduje się w widoku głównym
+   * i zmienia zakres czasowy. Nie uruchamia się w widokach archiwum i źródeł.
+   * 
+   * @dependencies [zakres] - uruchamia się przy zmianie zakresu czasowego
+   */
   useEffect(() => {
     if (widok === 'glowny') pobierzDane();
   }, [zakres]);
 
+  /**
+   * Memoizowane filtrowanie aktualizacji.
+   * 
+   * @memo
+   * @type {LegalUpdate[]}
+   * @description Zwraca odpowiednią listę aktualizacji w zależności od aktywnego widoku:
+   * - widok 'archiwum' - zwraca zarchiwizowane dokumenty
+   * - widok 'glowny' - zwraca bieżące aktualizacje
+   * 
+   * Memoizacja zapobiega niepotrzebnemu przeliczaniu gdy zależności się nie zmieniają.
+   * 
+   * @dependencies [widok, zapisane, zmiany]
+   */
   const filtrowaneZmiany = useMemo(() => {
     return widok === 'archiwum' ? zapisane : zmiany;
   }, [widok, zapisane, zmiany]);
