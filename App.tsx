@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { MonitoredSite, LegalUpdate, DashboardStats, UserProfileType, SystemConfig } from './types';
-import { fetchLegalUpdates, exportUpdates } from './services/apiService';
+import { fetchLegalUpdates, fetchELIUpdates, fetchRSSUpdates, fetchNFZUpdates, exportUpdates } from './services/apiService';
 import UpdateCard from './components/UpdateCard';
 
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
@@ -11,15 +11,15 @@ const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
     { id: 'eli-sejm-mp', name: 'Sejm RP - Monitor Polski (MP)', url: 'https://api.sejm.gov.pl/eli/acts/MP', isActive: true, type: 'eli' },
     
     // === KLIENT B: MINISTERSTWA (XML) ===
-    { id: 'eli-mz', name: 'MZ Dziennik Urzędowy', url: 'https://dziennikmz.mz.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
-    { id: 'eli-mswia', name: 'MSWiA Dziennik', url: 'https://edziennik.mswia.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
-    { id: 'eli-men', name: 'MEN Dziennik', url: 'https://dziennik.men.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
-    { id: 'eli-mon', name: 'MON Dziennik', url: 'https://dziennik.mon.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
-    { id: 'eli-nbp', name: 'NBP Dziennik', url: 'https://dzu.nbp.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-mz', name: 'Ministerstwo Zdrowia', url: 'https://dziennikmz.mz.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-mswia', name: 'MSWiA', url: 'https://edziennik.mswia.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-men', name: 'Ministerstwo Edukacji', url: 'https://dziennik.men.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-mon', name: 'MON', url: 'https://dziennik.mon.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-nbp', name: 'Narodowy Bank Polski', url: 'https://dzu.nbp.pl/api/eli/acts', isActive: true, type: 'eli' },
     
     // === RSS + SCRAPERS ===
-    { id: 'rss-zus', name: 'ZUS Aktualności (RSS)', url: 'https://www.zus.pl/rss/aktualnosci', isActive: true, type: 'rss' },
-    { id: 'rss-cez', name: 'e-Zdrowie CEZ (RSS)', url: 'https://www.ezdrowie.gov.pl/portal/home/rss', isActive: true, type: 'rss' },
+    { id: 'rss-zus', name: 'ZUS Aktualności (RSS)', url: 'https://www.zus.pl/o-zus/aktualnosci', isActive: true, type: 'rss' },
+    { id: 'rss-cez', name: 'e-Zdrowie CEZ (RSS)', url: 'https://www.ezdrowie.gov.pl', isActive: true, type: 'rss' },
     { id: 'nfz', name: 'NFZ Zarządzenia (Scraper)', url: 'https://www.nfz.gov.pl/zarzadzenia-prezesa/', isActive: true, type: 'scraper' }
   ],
   strategicTopics: [
@@ -40,6 +40,7 @@ const App: React.FC = () => {
   });
 
   const [zakres, setZakres] = useState<ZakresCzasu>('7d');
+  const [zrodlo, setZrodlo] = useState<'all' | 'eli' | 'rss' | 'nfz'>('all');
   const [zmiany, setZmiany] = useState<LegalUpdate[]>([]);
   const [zapisane, setZapisane] = useState<LegalUpdate[]>(() => {
     const saved = localStorage.getItem('zapisane_v13');
@@ -62,7 +63,18 @@ const App: React.FC = () => {
   const pobierzDane = async () => {
     setLaduje(true); setBlad(null);
     try {
-      const wynik = await fetchLegalUpdates(zakres);
+      let wynik: LegalUpdate[];
+      
+      if (zrodlo === 'eli') {
+        wynik = await fetchELIUpdates(zakres);
+      } else if (zrodlo === 'rss') {
+        wynik = await fetchRSSUpdates(zakres);
+      } else if (zrodlo === 'nfz') {
+        wynik = await fetchNFZUpdates(zakres);
+      } else {
+        wynik = await fetchLegalUpdates(zakres);
+      }
+      
       if (wynik.length === 0 && retryCount < 3) {
         setBlad({ message: 'Brak danych. Źródła mogą być niedostępne. Próba ponownego połączenia...', type: 'data' });
         setTimeout(() => {
@@ -79,7 +91,7 @@ const App: React.FC = () => {
       const errorType = err.message?.includes('fetch') ? 'network' : 'server';
       setBlad({
         message: errorType === 'network' 
-          ? 'Błąd połączenia z backendem. Sprawdź czy serwer działa na porcie 3001.'
+          ? 'Błąd połączenia z backendem. Sprawdź czy serwer działa na porcie 5554.'
           : 'Błąd systemu ingestii. Źródła ELI: Sejm (DU+MP), MZ, MSWiA, MEN, MON, NBP + RSS: ZUS, CEZ + NFZ Scraper.',
         type: errorType
       });
@@ -88,7 +100,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (widok === 'glowny') pobierzDane();
-  }, [zakres]);
+  }, [zakres, zrodlo]);
 
   const filtrowaneZmiany = useMemo(() => {
     return widok === 'archiwum' ? zapisane : zmiany;
@@ -97,24 +109,51 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-20">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#1e293b] flex items-center justify-center rounded-sm">
-               <i className="fas fa-server text-white text-xs"></i>
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#1e293b] flex items-center justify-center rounded-sm">
+                 <i className="fas fa-server text-white text-xs"></i>
+              </div>
+              <div>
+                <h1 className="text-[11px] font-black uppercase tracking-widest text-slate-900 leading-none">Repozytorium Aktów</h1>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Zero-AI Assessment • Faktograficzna Ingestia</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-[11px] font-black uppercase tracking-widest text-slate-900 leading-none">Repozytorium Aktów</h1>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Zero-AI Assessment • Faktograficzna Ingestia</p>
+
+            <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
+              {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
+                <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                  {z === '7d' ? '7 dni' : z === '30d' ? '30 dni' : '90 dni'}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
-            {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
-              <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                {z === '7d' ? '7 dni' : z === '30d' ? '30 dni' : '90 dni'}
+          {widok === 'glowny' && (
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setZrodlo('all')} 
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
+                Wszystkie
               </button>
-            ))}
-          </div>
+              <button 
+                onClick={() => setZrodlo('eli')} 
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'eli' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
+                🇪🇺 ELI
+              </button>
+              <button 
+                onClick={() => setZrodlo('rss')} 
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'rss' ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
+                📡 RSS
+              </button>
+              <button 
+                onClick={() => setZrodlo('nfz')} 
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'nfz' ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
+                🏥 NFZ
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -196,7 +235,7 @@ const App: React.FC = () => {
                 setTrescRaportu(raport);
               } catch (err: any) {
                 console.error('Błąd generowania raportu:', err);
-                setTrescRaportu(`BŁĄD GENEROWANIA RAPORTU\n\nNie udało się wygenerować wyciągu faktograficznego.\n\nPowód: ${err.message || 'Nieznany błąd'}\n\nSprawdź połączenie z backendem (port 3001).`);
+                setTrescRaportu(`BŁĄD GENEROWANIA RAPORTU\n\nNie udało się wygenerować wyciągu faktograficznego.\n\nPowód: ${err.message || 'Nieznany błąd'}\n\nSprawdź połączenie z backendem (port 5554).`);
               } finally {
                 setGenerujeRaport(false);
               }

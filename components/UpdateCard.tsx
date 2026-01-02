@@ -96,8 +96,8 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, loading, onSave, isSav
         <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
-            <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">Pobieranie danych z źródeł...</p>
-            <p className="text-[8px] text-slate-400 font-mono">Ingestuję: ELI (Sejm DU+MP, MZ, MSWiA, MEN, MON, NBP) + RSS (ZUS, CEZ) + NFZ</p>
+              <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">Pobieranie danych z 10 źródeł...</p>
+              <p className="text-[8px] text-slate-400 font-mono">ELI: Sejm (DU+MP) + 5 ministerstw | RSS: ZUS + CEZ | Scraper: NFZ</p>
           </div>
         </div>
       </div>

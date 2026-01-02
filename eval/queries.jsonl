@@ -1,0 +1,5 @@
+{"name":"All sources 120d","url":"http://localhost:5554/api/v1/updates?range=120d","source":"all"}
+{"name":"ELI 120d","url":"http://localhost:5554/api/v1/updates/eli?range=120d","source":"eli"}
+{"name":"RSS 120d","url":"http://localhost:5554/api/v1/updates/rss?range=120d","source":"rss"}
+{"name":"NFZ 120d","url":"http://localhost:5554/api/v1/updates/nfz?range=120d","source":"nfz"}
+{"name":"Frontend filter 90d (all)","url":"http://localhost:5554/api/v1/updates?range=90d","source":"all"}

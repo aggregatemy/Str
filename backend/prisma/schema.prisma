@@ -11,8 +11,12 @@ datasource db {
 }
 
 model LegalFact {
-  id                 String   @id
-  ingestMethod       String
+  id                 String   @id              // STARE POLE - będzie usunięte w drugiej migracji
+  compositeKey       String   @default("")     // Format: "${sourceId}:${docId}:${date}"
+  sourceId           String   @default("unknown") // 'eli-sejm-du', 'rss-zus', 'nfz'
+  docId              String   @default("")     // Unikalny ID dokumentu per źródło
+  ingestMethod       String                    // 'eli', 'rss', 'scraper'
+  
   eliUri             String?
   title              String
   summary            String
@@ -22,10 +26,13 @@ model LegalFact {
   legalStatus        String
   officialRationale  String
   sourceUrl          String
+  
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  @@unique([compositeKey])
   @@index([date])
   @@index([ingestMethod])
+  @@index([sourceId])
   @@index([impact])
 }

@@ -4,7 +4,8 @@ export const SOURCES = {
   ELI_SEARCH: 'https://api.sejm.gov.pl/eli/search',
   
   // Kanały RSS (Aktywne)
-  RSS_ZUS: 'https://www.zus.pl/rss/aktualnosci', // Reaktywowany
+  RSS_ZUS: 'https://www.zus.pl/o-zus/aktualnosci/-/asset_publisher/aktualnosci/rss', // Aktualności ZUS
+  RSS_ZUS_WYJASNIENIA: 'https://www.zus.pl/baza-wiedzy/biezace-wyjasnienia-komorek-merytorycznych/-/asset_publisher/biezace-wyjasnienia-komorek-merytorycznych/rss', // Wyjaśnienia
   RSS_CEZ: 'https://www.ezdrowie.gov.pl/portal/home/rss', // e-Zdrowie
   
   // Scraper HTML - Baza Aktów Własnych (DevExpress, wymaga Playwright dla pełnej obsługi)

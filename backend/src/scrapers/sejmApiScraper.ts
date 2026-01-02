@@ -47,12 +47,12 @@ export async function scrapeSejmAPI(): Promise<LegalFact[]> {
           continue;
         }
 
-        // Sprawdź czy akt jest z ostatnich 90 dni
+        // Sprawdź czy akt jest z ostatnich 150 dni (bufor dla filtrów 90d + 30d zapas + 30d margin)
         const announceDate = act.announcementDate ? new Date(act.announcementDate) : null;
         if (announceDate) {
-          const ninetyDaysAgo = new Date();
-          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-          if (announceDate < ninetyDaysAgo) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - 150);
+          if (announceDate < cutoffDate) {
             continue; // Zbyt stary
           }
         }

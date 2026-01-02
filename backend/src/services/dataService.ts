@@ -9,7 +9,10 @@ import { SOURCES } from '../config/sources.js';
 const prisma = new PrismaClient();
 
 export async function refreshData(): Promise<void> {
-  console.log('🔄 Odświeżanie danych z wszystkich źródeł (ELI + RSS + Scrapers)...');
+  const timestamp = new Date().toISOString();
+  console.log(`\n${'─'.repeat(60)}`);
+  console.log(`🔄 [${timestamp}] Odświeżanie danych z wszystkich źródeł (ELI + RSS + Scrapers)...`);
+  console.log(`${'─'.repeat(60)}\n`);
   const startTime = Date.now();
   
   // Pobieranie ze wszystkich źródeł (ELI sources, Sejm API, RSS, NFZ)
@@ -21,6 +24,23 @@ export async function refreshData(): Promise<void> {
     scrapeNFZ()
   ]);
 
+  // Szczegółowe logowanie błędów z Promise.allSettled
+  if (eliSources.status === 'rejected') {
+    console.error(`❌ [${new Date().toISOString()}] ELI scraper error:`, eliSources.reason?.message || eliSources.reason);
+  }
+  if (sejmApi.status === 'rejected') {
+    console.error(`❌ [${new Date().toISOString()}] Sejm API scraper error:`, sejmApi.reason?.message || sejmApi.reason);
+  }
+  if (zusRss.status === 'rejected') {
+    console.error(`❌ [${new Date().toISOString()}] ZUS RSS scraper error:`, zusRss.reason?.message || zusRss.reason);
+  }
+  if (cezRss.status === 'rejected') {
+    console.error(`❌ [${new Date().toISOString()}] CEZ RSS scraper error:`, cezRss.reason?.message || cezRss.reason);
+  }
+  if (nfz.status === 'rejected') {
+    console.error(`❌ [${new Date().toISOString()}] NFZ scraper error:`, nfz.reason?.message || nfz.reason);
+  }
+
   const eliData = eliSources.status === 'fulfilled' ? eliSources.value : [];
   const sejmData = sejmApi.status === 'fulfilled' ? sejmApi.value : [];
   const zusData = zusRss.status === 'fulfilled' ? zusRss.value : [];
@@ -30,58 +50,86 @@ export async function refreshData(): Promise<void> {
   const allData = [...eliData, ...sejmData, ...zusData, ...cezData, ...nfzData];
 
   // Zapisz do bazy SQLite (upsert - update lub insert)
+  let successCount = 0;
+  let errorCount = 0;
+  
   for (const fact of allData) {
-    await prisma.legalFact.upsert({
-      where: { id: fact.id },
-      update: {
-        title: fact.title,
-        summary: fact.summary,
-        legalStatus: fact.legalStatus,
-        officialRationale: fact.officialRationale,
-      },
-      create: {
-        id: fact.id,
-        ingestMethod: fact.ingestMethod,
-        eliUri: fact.eliUri,
-        title: fact.title,
-        summary: fact.summary,
-        date: fact.date,
-        impact: fact.impact,
-        category: fact.category,
-        legalStatus: fact.legalStatus,
-        officialRationale: fact.officialRationale,
-        sourceUrl: fact.sourceUrl,
-      }
-    });
+    try {
+      await prisma.legalFact.upsert({
+        where: { id: fact.id },
+        update: {
+          title: fact.title,
+          summary: fact.summary,
+          legalStatus: fact.legalStatus,
+          officialRationale: fact.officialRationale,
+        },
+        create: {
+          id: fact.id,
+          ingestMethod: fact.ingestMethod,
+          eliUri: fact.eliUri,
+          title: fact.title,
+          summary: fact.summary,
+          date: fact.date,
+          impact: fact.impact,
+          category: fact.category,
+          legalStatus: fact.legalStatus,
+          officialRationale: fact.officialRationale,
+          sourceUrl: fact.sourceUrl,
+        }
+      });
+      successCount++;
+    } catch (dbError: any) {
+      errorCount++;
+      console.error(`❌ [${new Date().toISOString()}] Błąd zapisu do bazy (${fact.id}):`, dbError.message);
+    }
   }
   
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-  console.log(`✅ Zapisano ${allData.length} rekordów do SQLite w ${duration}s`);
+  const endTimestamp = new Date().toISOString();
+  console.log(`\n${'─'.repeat(60)}`);
+  if (errorCount > 0) {
+    console.log(`⚠️  [${endTimestamp}] CZĘŚCIOWY SUKCES: ${successCount}/${allData.length} rekordów zapisanych (${errorCount} błędów) w ${duration}s`);
+  } else {
+    console.log(`✅ [${endTimestamp}] SUKCES: Zapisano ${allData.length} rekordów do SQLite w ${duration}s`);
+  }
+  console.log(`   📊 ELI: ${eliData.length} | Sejm API: ${sejmData.length} | ZUS RSS: ${zusData.length} | CEZ RSS: ${cezData.length} | NFZ: ${nfzData.length}`);
+  console.log(`${'─'.repeat(60)}\n`);
 }
 
-export async function getData(range?: string, method?: string): Promise<LegalFact[]> {
+export async function getData(range?: string, method?: string, source?: string): Promise<LegalFact[]> {
+  const timestamp = new Date().toISOString();
   let whereClause: any = {};
 
   // Filtrowanie po dacie
   if (range) {
-    const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+    const days = range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 120;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     whereClause.date = { gte: cutoffDate.toISOString().split('T')[0] };
+    console.log(`🔍 [${timestamp}] Filtr daty: ostatnie ${days} dni (od ${cutoffDate.toISOString().split('T')[0]})`);
   }
 
   // Filtrowanie po metodzie
   if (method) {
     whereClause.ingestMethod = method;
+    console.log(`🔍 [${timestamp}] Filtr metody: ${method}`);
+  }
+
+  // Filtrowanie po konkretnym źródle (opcjonalne)
+  if (source) {
+    whereClause.sourceId = source;
+    console.log(`🔍 [${timestamp}] Filtr źródła: ${source}`);
   }
 
   const records = await prisma.legalFact.findMany({
     where: whereClause,
     orderBy: { date: 'desc' }
   });
+  
+  console.log(`📊 [${timestamp}] Znaleziono ${records.length} rekordów w bazie`);
 
   return records.map(r => ({
-    id: r.id,
+    id: r.compositeKey,
     ingestMethod: r.ingestMethod as 'eli' | 'rss' | 'scraper',
     eliUri: r.eliUri,
     title: r.title,
@@ -97,7 +145,7 @@ export async function getData(range?: string, method?: string): Promise<LegalFac
 
 export async function getExport(ids: string[]): Promise<string> {
   const selected = await prisma.legalFact.findMany({
-    where: { id: { in: ids } }
+    where: { compositeKey: { in: ids } }
   });
 
   return selected.map(f => `

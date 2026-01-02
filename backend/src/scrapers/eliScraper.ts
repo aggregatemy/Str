@@ -37,7 +37,7 @@ export async function scrapeAllELI(): Promise<LegalFact[]> {
  */
 async function scrapeELISource(source: ELISource): Promise<LegalFact[]> {
   const client = new ELIClient(source);
-  return await client.fetchRecentDocuments(30); // Ostatnie 30 dni
+  return await client.fetchRecentDocuments(150); // Ostatnie 150 dni (bufor dla filtrów 90d + 30d zapas)
 }
 
 /**

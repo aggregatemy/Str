@@ -97,7 +97,7 @@ export class ELIClient {
    * - A (Sejm): Direct API query
    * - B (Resortowe): Brute-force przez pozycje
    */
-  async fetchRecentDocuments(days: number = 30): Promise<LegalFact[]> {
+  async fetchRecentDocuments(days: number = 120): Promise<LegalFact[]> {
     if (this.source.clientType === 'A') {
       return this.fetchClientA(days);
     } else {
@@ -107,18 +107,37 @@ export class ELIClient {
   
   /**
    * KLIENT A: Sejm API (JSON)
-   * Zapytanie bezpośrednie z parametrami
+   * Pobieranie z ostatniego miesiąca (grudzień 2025 + styczeń 2026)
    */
   private async fetchClientA(days: number): Promise<LegalFact[]> {
-    const currentYear = new Date().getFullYear();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const previousYear = currentYear - 1;
     const allFacts: LegalFact[] = [];
     
-    console.log(`📡 Klient A (Sejm): ${this.source.name}, rok ${currentYear}`);
+    // Pobierz z poprzedniego roku (cały 2025 - pozycje 1-150)
+    console.log(`📡 Klient A (Sejm): ${this.source.name}, rok ${previousYear}`);
+    const previousYearFacts = await this.fetchYearPositions(previousYear, 1, 150);
+    allFacts.push(...previousYearFacts);
     
-    // Iteruj przez pozycje 1-100 dla bieżącego roku
-    for (let pos = 1; pos <= 100; pos++) {
+    // Pobierz z bieżącego roku (2026 - pozycje 1-150)
+    console.log(`📡 Klient A (Sejm): ${this.source.name}, rok ${currentYear}`);
+    const currentYearFacts = await this.fetchYearPositions(currentYear, 1, 150);
+    allFacts.push(...currentYearFacts);
+    
+    console.log(`✅ ${this.source.name}: ${allFacts.length} dokumentów`);
+    return allFacts;
+  }
+  
+  /**
+   * Pobierz pozycje dla konkretnego roku
+   */
+  private async fetchYearPositions(year: number, startPos: number, maxPos: number): Promise<LegalFact[]> {
+    const facts: LegalFact[] = [];
+    
+    for (let pos = startPos; pos <= maxPos; pos++) {
       try {
-        const url = `${this.source.apiEndpoint}/${currentYear}/${pos}`;
+        const url = `${this.source.apiEndpoint}/${year}/${pos}`;
         const response = await axios.get(url, {
           timeout: 10000,
           headers: {
@@ -129,40 +148,71 @@ export class ELIClient {
         });
         
         // Parsuj odpowiedź JSON
-        const fact = this.parseClientAResponse(response.data, pos);
-        if (fact) allFacts.push(fact);
+        const fact = this.parseClientAResponse(response.data, pos, year);
+        if (fact) {
+          facts.push(fact);
+          // Debug: pokaż pierwsze 3 pozycje
+          if (pos <= 3) {
+            console.log(`  ✓ ${year}/${pos}: ${fact.title.substring(0, 60)}...`);
+          }
+        }
         
         // Rate limiting
         await this.delay(100);
         
       } catch (err: any) {
         if (err.response?.status === 404) {
-          // Koniec dostępnych pozycji
+          // Koniec dostępnych pozycji dla tego roku
+          console.log(`  └─ Koniec pozycji dla ${year} (404 na pozycji ${pos})`);
           break;
+        }
+        // Debug: pokaż inne błędy dla pierwszych pozycji
+        if (pos <= 3) {
+          console.log(`  ⚠ ${year}/${pos}: ${err.message}`);
         }
         // Ignoruj inne błędy i kontynuuj
       }
     }
+    
+    console.log(`  📊 Rok ${year}: ${facts.length} dokumentów`);
+    return facts;
+  }
+  
+  /**
+   * KLIENT B: Ministerstwa (XML)
+   * Pobieranie z ostatniego miesiąca (grudzień 2025 + styczeń 2026)
+   */
+  private async fetchClientB(days: number): Promise<LegalFact[]> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const previousYear = currentYear - 1;
+    const allFacts: LegalFact[] = [];
+    
+    console.log(`📡 Klient B (Resortowe): ${this.source.name}, ${this.source.dziennikId}`);
+    
+    // Pobierz z poprzedniego roku (cały 2025 - pozycje 1-80)
+    const previousYearFacts = await this.fetchMinistryYearPositions(previousYear, 1, 80);
+    allFacts.push(...previousYearFacts);
+    
+    // Pobierz z bieżącego roku (2026 - pozycje 1-80)
+    const currentYearFacts = await this.fetchMinistryYearPositions(currentYear, 1, 80);
+    allFacts.push(...currentYearFacts);
     
     console.log(`✅ ${this.source.name}: ${allFacts.length} dokumentów`);
     return allFacts;
   }
   
   /**
-   * KLIENT B: Ministerstwa (XML)
-   * Brute-force przez pozycje aż do 404
+   * Pobierz pozycje ministerstwa dla konkretnego roku
    */
-  private async fetchClientB(days: number): Promise<LegalFact[]> {
-    const currentYear = new Date().getFullYear();
-    const allFacts: LegalFact[] = [];
-    
-    console.log(`📡 Klient B (Resortowe): ${this.source.name}, ${this.source.dziennikId}`);
+  private async fetchMinistryYearPositions(year: number, startPos: number, maxPos: number): Promise<LegalFact[]> {
+    const facts: LegalFact[] = [];
     
     // Iteruj przez pozycje 1-50 (ministerstwa publikują rzadziej)
-    for (let pos = 1; pos <= 50; pos++) {
+    for (let pos = startPos; pos <= maxPos; pos++) {
       try {
         // Format: https://dziennikmz.mz.gov.pl/api/eli/acts/DUM_MZ/2024/5/ogl/wiza/pol/xml
-        const url = `${this.source.apiEndpoint}/${this.source.dziennikId}/${currentYear}/${pos}/ogl/wiza/pol/xml`;
+        const url = `${this.source.apiEndpoint}/${this.source.dziennikId}/${year}/${pos}/ogl/wiza/pol/xml`;
         
         const response = await axios.get(url, {
           timeout: 10000,
@@ -174,35 +224,34 @@ export class ELIClient {
         });
         
         // Parsuj XML
-        const fact = this.parseClientBResponse(response.data, pos);
-        if (fact) allFacts.push(fact);
+        const fact = this.parseClientBResponse(response.data, pos, year);
+        if (fact) facts.push(fact);
         
         // Rate limiting (ważniejsze dla serwerów resortowych)
         await this.delay(150);
         
       } catch (err: any) {
         if (err.response?.status === 404) {
-          // Koniec dostępnych pozycji
+          // Koniec dostępnych pozycji dla tego roku
           break;
         }
         // Ignoruj inne błędy
       }
     }
     
-    console.log(`✅ ${this.source.name}: ${allFacts.length} dokumentów`);
-    return allFacts;
+    return facts;
   }
   
   /**
    * Parsuj odpowiedź z Klienta A (Sejm JSON)
    */
-  private parseClientAResponse(data: any, position: number): LegalFact | null {
+  private parseClientAResponse(data: any, position: number, year: number): LegalFact | null {
     if (!data || !data.title) return null;
     
-    const eliUri = data.ELI || `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${data.year || new Date().getFullYear()}/${position}`;
+    const eliUri = data.ELI || `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${year}/${position}`;
     
     return {
-      id: `${this.source.id}-${data.year || new Date().getFullYear()}-${position}`,
+      id: `${this.source.id}-${year}-${position}`,
       ingestMethod: 'eli',
       eliUri,
       title: data.title || 'Brak tytułu',
@@ -219,7 +268,7 @@ export class ELIClient {
   /**
    * Parsuj odpowiedź z Klienta B (Ministerstwa XML)
    */
-  private parseClientBResponse(xmlData: string, position: number): LegalFact | null {
+  private parseClientBResponse(xmlData: string, position: number, year: number): LegalFact | null {
     try {
       // Prosta ekstrakcja z XML (można rozbudować)
       const titleMatch = xmlData.match(/<title[^>]*>(.*?)<\/title>/i);
@@ -228,11 +277,10 @@ export class ELIClient {
       
       if (!titleMatch) return null;
       
-      const currentYear = new Date().getFullYear();
-      const eliUri = `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${currentYear}/${position}`;
+      const eliUri = `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${year}/${position}`;
       
       return {
-        id: `${this.source.id}-${currentYear}-${position}`,
+        id: `${this.source.id}-${year}-${position}`,
         ingestMethod: 'eli',
         eliUri,
         title: titleMatch[1].replace(/<[^>]*>/g, '').trim(),
