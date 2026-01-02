@@ -6,16 +6,28 @@ import UpdateCard from './components/UpdateCard';
 
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
   masterSites: [
-    { id: '1', name: 'ISAP ELI (System API)', url: 'https://isap.sejm.gov.pl/api/eli', isActive: true, type: 'eli' },
-    { id: '2', name: 'ZUS (Strumień RSS)', url: 'https://www.zus.pl/rss', isActive: true, type: 'rss' },
-    { id: '3', name: 'CEZ (Strumień RSS)', url: 'https://cez.gov.pl/rss', isActive: true, type: 'rss' },
-    { id: '4', name: 'NFZ (Backendowy Scraper)', url: 'https://www.nfz.gov.pl/zarzadzenia-prezesa/', isActive: true, type: 'scraper' }
+    // === KLIENT A: PARLAMENT (JSON) ===
+    { id: 'eli-sejm-du', name: 'Sejm RP - Dziennik Ustaw (DU)', url: 'https://api.sejm.gov.pl/eli/acts/DU', isActive: true, type: 'eli' },
+    { id: 'eli-sejm-mp', name: 'Sejm RP - Monitor Polski (MP)', url: 'https://api.sejm.gov.pl/eli/acts/MP', isActive: true, type: 'eli' },
+    
+    // === KLIENT B: MINISTERSTWA (XML) ===
+    { id: 'eli-mz', name: 'MZ Dziennik Urzędowy', url: 'https://dziennikmz.mz.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-mswia', name: 'MSWiA Dziennik', url: 'https://edziennik.mswia.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-men', name: 'MEN Dziennik', url: 'https://dziennik.men.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-mon', name: 'MON Dziennik', url: 'https://dziennik.mon.gov.pl/api/eli/acts', isActive: true, type: 'eli' },
+    { id: 'eli-nbp', name: 'NBP Dziennik', url: 'https://dzu.nbp.pl/api/eli/acts', isActive: true, type: 'eli' },
+    
+    // === RSS + SCRAPERS ===
+    { id: 'rss-zus', name: 'ZUS Aktualności (RSS)', url: 'https://www.zus.pl/rss/aktualnosci', isActive: true, type: 'rss' },
+    { id: 'rss-cez', name: 'e-Zdrowie CEZ (RSS)', url: 'https://www.ezdrowie.gov.pl/portal/home/rss', isActive: true, type: 'rss' },
+    { id: 'nfz', name: 'NFZ Zarządzenia (Scraper)', url: 'https://www.nfz.gov.pl/zarzadzenia-prezesa/', isActive: true, type: 'scraper' }
   ],
   strategicTopics: [
     "Zarządzenia Prezesa NFZ",
     "Ustawy zdrowotne",
     "Komunikaty ZUS",
-    "P1/P2/e-Zdrowie"
+    "P1/P2/e-Zdrowie",
+    "Rozporządzenia MZ"
   ]
 };
 
@@ -35,7 +47,8 @@ const App: React.FC = () => {
   });
   
   const [laduje, setLaduje] = useState(false);
-  const [blad, setBlad] = useState<string | null>(null);
+  const [blad, setBlad] = useState<{ message: string; type: 'network' | 'server' | 'data' } | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [widok, setWidok] = useState<'glowny' | 'archiwum' | 'zrodla'>('glowny');
   const [zaznaczone, setZaznaczone] = useState<string[]>([]);
 
@@ -50,10 +63,26 @@ const App: React.FC = () => {
     setLaduje(true); setBlad(null);
     try {
       const wynik = await fetchLegalUpdates(zakres);
+      if (wynik.length === 0 && retryCount < 3) {
+        setBlad({ message: 'Brak danych. Źródła mogą być niedostępne. Próba ponownego połączenia...', type: 'data' });
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          pobierzDane();
+        }, 2000);
+        return;
+      }
       setZmiany(wynik);
       setZaznaczone(wynik.map(u => u.id));
+      setRetryCount(0);
     } catch (err: any) {
-      setBlad("Błąd systemu ingestii. Sprawdź dostępność API ELI, RSS lub mechanizmu Scrapingowego.");
+      console.error('Błąd pobierania danych:', err);
+      const errorType = err.message?.includes('fetch') ? 'network' : 'server';
+      setBlad({
+        message: errorType === 'network' 
+          ? 'Błąd połączenia z backendem. Sprawdź czy serwer działa na porcie 3001.'
+          : 'Błąd systemu ingestii. Źródła ELI: Sejm (DU+MP), MZ, MSWiA, MEN, MON, NBP + RSS: ZUS, CEZ + NFZ Scraper.',
+        type: errorType
+      });
     } finally { setLaduje(false); }
   };
 
@@ -96,7 +125,25 @@ const App: React.FC = () => {
           <button onClick={() => setWidok('zrodla')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'zrodla' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[18px]' : 'text-slate-400'}`}>Parametry API</button>
         </div>
 
-        {blad && <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-700 text-[10px] font-black uppercase">{blad}</div>}
+        {blad && (
+          <div className={`mb-8 p-6 border-2 rounded ${blad.type === 'network' ? 'bg-red-50 border-red-200' : blad.type === 'server' ? 'bg-orange-50 border-orange-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <div className="flex items-start gap-4">
+              <i className={`fas ${blad.type === 'network' ? 'fa-wifi text-red-600' : blad.type === 'server' ? 'fa-exclamation-triangle text-orange-600' : 'fa-database text-yellow-600'} text-xl`}></i>
+              <div className="flex-1">
+                <h3 className="text-[10px] font-black uppercase tracking-widest mb-2 ${blad.type === 'network' ? 'text-red-800' : blad.type === 'server' ? 'text-orange-800' : 'text-yellow-800'}">Błąd Systemu</h3>
+                <p className="text-[11px] text-slate-700 leading-relaxed mb-4">{blad.message}</p>
+                <div className="flex gap-3">
+                  <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
+                    <i className="fas fa-redo mr-2"></i>Ponów próbę
+                  </button>
+                  <button onClick={() => setBlad(null)} className="px-4 py-2 border-2 border-slate-300 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-100 transition-all">
+                    Zamknij
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {widok === 'zrodla' ? (
           <div className="bg-white border border-slate-200 p-10 space-y-8">
@@ -140,11 +187,19 @@ const App: React.FC = () => {
       {zaznaczone.length > 0 && widok === 'glowny' && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2">
           <button 
-            onClick={() => {
+            onClick={async () => {
               const wybrane = zmiany.filter(u => zaznaczone.includes(u.id));
               setRaportOtwarty(true);
               setGenerujeRaport(true);
-              exportUpdates(zaznaczone).then(setTrescRaportu).finally(() => setGenerujeRaport(false));
+              try {
+                const raport = await exportUpdates(zaznaczone);
+                setTrescRaportu(raport);
+              } catch (err: any) {
+                console.error('Błąd generowania raportu:', err);
+                setTrescRaportu(`BŁĄD GENEROWANIA RAPORTU\n\nNie udało się wygenerować wyciągu faktograficznego.\n\nPowód: ${err.message || 'Nieznany błąd'}\n\nSprawdź połączenie z backendem (port 3001).`);
+              } finally {
+                setGenerujeRaport(false);
+              }
             }}
             className="px-10 py-5 bg-slate-900 text-white font-black text-[10px] uppercase shadow-2xl hover:bg-black transition-all flex items-center gap-5"
           >

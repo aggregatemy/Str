@@ -2,16 +2,23 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { LegalFact } from '../types/index.js';
 
+/**
+ * NFZ BAW (Baza Aktów Własnych) - DevExpress Grid
+ * TODO: Rozważyć upgrade na Playwright dla pełnej obsługi dynamicznych tabel (.dxgvDataRow)
+ * Obecna implementacja: uproszczony Cheerio scraper (może nie działać poprawnie)
+ */
 export async function scrapeNFZ(): Promise<LegalFact[]> {
   try {
-    const response = await axios.get('https://www.nfz.gov.pl/zarzadzenia-prezesa/', {
+    // UWAGA: baw.nfz.gov.pl używa DevExpress - ten scraper może nie działać poprawnie
+    const response = await axios.get('https://baw.nfz.gov.pl/NFZ/tabBrowser/mainPage', {
       timeout: 15000
     });
 
     const $ = cheerio.load(response.data);
     const facts: LegalFact[] = [];
 
-    $('table tbody tr').each((_, row) => {
+    // DevExpress używa klasy .dxgvDataRow dla wierszy z danymi
+    $('.dxgvDataRow, table tbody tr').each((_, row) => {
       const cells = $(row).find('td');
       if (cells.length < 3) return;
 
@@ -32,7 +39,7 @@ export async function scrapeNFZ(): Promise<LegalFact[]> {
           category: 'NFZ',
           legalStatus: 'published',
           officialRationale: '',
-          sourceUrl: link ? `https://www.nfz.gov.pl${link}` : 'https://www.nfz.gov.pl/zarzadzenia-prezesa/'
+          sourceUrl: link ? (link.startsWith('http') ? link : `https://baw.nfz.gov.pl${link}`) : 'https://baw.nfz.gov.pl/NFZ/tabBrowser/mainPage'
         });
       }
     });

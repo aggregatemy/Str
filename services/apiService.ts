@@ -1,16 +1,40 @@
 import { LegalUpdate } from '../types';
 
 const API_BASE = '/api/v1';
+const TIMEOUT_MS = 15000; // 15 sekund
+
+function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = TIMEOUT_MS): Promise<Response> {
+  return Promise.race([
+    fetch(url, options),
+    new Promise<Response>((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout: Serwer nie odpowiedział w określonym czasie')), timeout)
+    )
+  ]);
+}
 
 export async function fetchLegalUpdates(range?: string): Promise<LegalUpdate[]> {
   try {
     const params = new URLSearchParams();
     if (range) params.set('range', range);
 
-    const response = await fetch(`${API_BASE}/updates?${params}`);
-    if (!response.ok) throw new Error('Błąd pobierania danych');
+    const response = await fetchWithTimeout(`${API_BASE}/updates?${params}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Endpoint API nie istnieje. Sprawdź konfigurację backendu.');
+      }
+      if (response.status === 500) {
+        throw new Error('Błąd serwera. Sprawdź logi backendu.');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
     const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      console.warn('API zwróciło nieprawidłowy format danych:', data);
+      return [];
+    }
     
     return data.map((item: any) => ({
       id: item.id,
@@ -25,19 +49,46 @@ export async function fetchLegalUpdates(range?: string): Promise<LegalUpdate[]> 
       officialRationale: item.officialRationale,
       sourceUrl: item.sourceUrl
     }));
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error);
+    if (error.message?.includes('Failed to fetch')) {
+      throw new Error('Błąd połączenia. Backend nie działa lub jest niedostępny na porcie 3001.');
+    }
     throw error;
   }
 }
 
 export async function exportUpdates(ids: string[]): Promise<string> {
-  const response = await fetch(`${API_BASE}/export/extract`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids })
-  });
+  try {
+    if (!ids || ids.length === 0) {
+      throw new Error('Brak wybranych dokumentów do eksportu.');
+    }
 
-  if (!response.ok) throw new Error('Błąd eksportu');
-  return response.text();
+    const response = await fetchWithTimeout(`${API_BASE}/export/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        throw new Error('Nieprawidłowe żądanie. Sprawdź wybrane dokumenty.');
+      }
+      throw new Error(`HTTP ${response.status}: Nie udało się wygenerować raportu`);
+    }
+    
+    const text = await response.text();
+    
+    if (!text || text.trim().length === 0) {
+      throw new Error('Backend zwrócił pusty raport.');
+    }
+    
+    return text;
+  } catch (error: any) {
+    console.error('Export Error:', error);
+    if (error.message?.includes('Failed to fetch')) {
+      throw new Error('Błąd połączenia z backendem podczas eksportu.');
+    }
+    throw error;
+  }
 }

@@ -5,11 +5,11 @@ export function startScheduler(): void {
   // Pierwsze pobranie przy starcie
   refreshData();
 
-  // Co 6 godzin
-  cron.schedule('0 */6 * * *', async () => {
+  // Co 1 minutę (dla środowiska europejskiego)
+  cron.schedule('* * * * *', async () => {
     console.log('⏰ Scheduled refresh triggered');
     await refreshData();
   });
 
-  console.log('📅 Scheduler uruchomiony (co 6h)');
+  console.log('📅 Scheduler uruchomiony (co 1 min)');
 }

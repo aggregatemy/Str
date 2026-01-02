@@ -1,4 +1,5 @@
 import { LegalFact } from '../../types/index.js';
+import * as $rdf from 'rdflib';
 
 /**
  * Struktura ELI zgodna z ontologią europejską
@@ -166,20 +167,103 @@ export class ELIParser {
   }
 
   /**
-   * Parsuj RDF/XML (jeśli potrzebne)
+   * Parsuj RDF/XML (standardowy format ELI)
    */
   static parseRdfXml(xml: string, sourceId: string): LegalFact[] {
-    // TODO: Implementacja parsera RDF/XML (można użyć biblioteki rdflib.js)
-    console.warn('⚠️ RDF/XML parser not implemented yet');
-    return [];
+    try {
+      const store = $rdf.graph();
+      const baseUri = 'http://data.europa.eu/eli/ontology#';
+      
+      // Parsuj XML do store
+      $rdf.parse(xml, store, baseUri, 'application/rdf+xml');
+      
+      // ELI namespace
+      const ELI = $rdf.Namespace('http://data.europa.eu/eli/ontology#');
+      const RDF = $rdf.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+      const DCTERMS = $rdf.Namespace('http://purl.org/dc/terms/');
+      
+      const results: LegalFact[] = [];
+      const subjects = store.statementsMatching(null, RDF('type'), ELI('LegalResource'));
+      
+      for (const stmt of subjects) {
+        const subject = stmt.subject;
+        
+        // Wyciągnij właściwości
+        const title = store.any(subject, ELI('title')) || 
+                      store.any(subject, DCTERMS('title'));
+        const date = store.any(subject, ELI('date_publication')) || 
+                     store.any(subject, DCTERMS('date'));
+        const description = store.any(subject, ELI('description')) || 
+                           store.any(subject, DCTERMS('description'));
+        
+        if (title) {
+          const fact = this.convertEliToLegalFact({
+            '@id': subject.value,
+            'eli:title': title.value,
+            'eli:date_publication': date?.value || new Date().toISOString(),
+            'eli:description': description?.value || '',
+            'eli:type_document': 'legal_resource'
+          }, sourceId);
+          
+          if (fact) results.push(fact);
+        }
+      }
+      
+      return results;
+      
+    } catch (err) {
+      console.error('❌ Błąd parsowania RDF/XML:', err);
+      return [];
+    }
   }
 
   /**
-   * Parsuj Turtle (jeśli potrzebne)
+   * Parsuj Turtle (alternatywny format RDF)
    */
   static parseTurtle(ttl: string, sourceId: string): LegalFact[] {
-    // TODO: Implementacja parsera Turtle
-    console.warn('⚠️ Turtle parser not implemented yet');
-    return [];
+    try {
+      const store = $rdf.graph();
+      const baseUri = 'http://data.europa.eu/eli/ontology#';
+      
+      // Parsuj Turtle do store
+      $rdf.parse(ttl, store, baseUri, 'text/turtle');
+      
+      // Podobnie jak RDF/XML
+      const ELI = $rdf.Namespace('http://data.europa.eu/eli/ontology#');
+      const RDF = $rdf.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+      const DCTERMS = $rdf.Namespace('http://purl.org/dc/terms/');
+      
+      const results: LegalFact[] = [];
+      const subjects = store.statementsMatching(null, RDF('type'), ELI('LegalResource'));
+      
+      for (const stmt of subjects) {
+        const subject = stmt.subject;
+        
+        const title = store.any(subject, ELI('title')) || 
+                      store.any(subject, DCTERMS('title'));
+        const date = store.any(subject, ELI('date_publication')) || 
+                     store.any(subject, DCTERMS('date'));
+        const description = store.any(subject, ELI('description')) || 
+                           store.any(subject, DCTERMS('description'));
+        
+        if (title) {
+          const fact = this.convertEliToLegalFact({
+            '@id': subject.value,
+            'eli:title': title.value,
+            'eli:date_publication': date?.value || new Date().toISOString(),
+            'eli:description': description?.value || '',
+            'eli:type_document': 'legal_resource'
+          }, sourceId);
+          
+          if (fact) results.push(fact);
+        }
+      }
+      
+      return results;
+      
+    } catch (err) {
+      console.error('❌ Błąd parsowania Turtle:', err);
+      return [];
+    }
   }
 }

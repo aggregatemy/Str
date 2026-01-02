@@ -4,7 +4,9 @@ export interface ELISource {
   institution: string;
   baseUrl: string;
   apiEndpoint: string;
-  format: 'json-ld' | 'rdf-xml' | 'turtle' | 'auto';
+  format: 'json-ld' | 'rdf-xml' | 'turtle' | 'auto' | 'json' | 'xml';
+  clientType: 'A' | 'B'; // A = Sejm (JSON), B = Resortowe (XML)
+  dziennikId?: string; // ID dziennika dla API resortowego (np. DUM_MZ)
   active: boolean;
   priority: number; // 1 = highest (Sejm), 5 = lowest
   category: string;
@@ -12,147 +14,182 @@ export interface ELISource {
 }
 
 export const ELI_SOURCES: ELISource[] = [
-  // === PRIORITY 1: GŁÓWNE ŹRÓDŁA ===
+  // === KLIENT A: PARLAMENT (Serwer Centralny - JSON) ===
   {
-    id: 'sejm',
-    name: 'Sejm RP - Internetowy System Aktów Prawnych',
+    id: 'sejm-du',
+    name: 'Sejm RP - Dziennik Ustaw (DU)',
     institution: 'Sejm Rzeczypospolitej Polskiej',
-    baseUrl: 'https://isap.sejm.gov.pl',
-    apiEndpoint: 'https://isap.sejm.gov.pl/api/eli/acts',
-    format: 'json-ld',
+    baseUrl: 'https://api.sejm.gov.pl',
+    apiEndpoint: 'https://api.sejm.gov.pl/eli/acts/DU',
+    format: 'json',
+    clientType: 'A',
+    dziennikId: 'DU',
     active: true,
     priority: 1,
-    category: 'Prawo krajowe',
-    description: 'Główne repozytorium aktów prawnych RP (ustawy, rozporządzenia)'
+    category: 'Ustawy i Rozporządzenia',
+    description: 'Dziennik Ustaw - ustawy, rozporządzenia Rady Ministrów i ministrów'
   },
   {
-    id: 'rcl',
-    name: 'Rządowe Centrum Legislacji',
-    institution: 'Rządowe Centrum Legislacji',
-    baseUrl: 'https://legislacja.rcl.gov.pl',
-    apiEndpoint: 'https://legislacja.rcl.gov.pl/api/eli',
-    format: 'json-ld',
+    id: 'sejm-mp',
+    name: 'Sejm RP - Monitor Polski (MP)',
+    institution: 'Sejm Rzeczypospolitej Polskiej',
+    baseUrl: 'https://api.sejm.gov.pl',
+    apiEndpoint: 'https://api.sejm.gov.pl/eli/acts/MP',
+    format: 'json',
+    clientType: 'A',
+    dziennikId: 'MP',
     active: true,
     priority: 1,
-    category: 'Prawo krajowe',
-    description: 'Projekty aktów prawnych w toku legislacji'
+    category: 'Monitor Polski',
+    description: 'Monitor Polski - uchwały Sejmu/Senatu, obwieszczenia'
   },
   
-  // === PRIORITY 2: MINISTERSTWA ===
+  // === KLIENT B: MINISTERSTWA (Serwery Resortowe - XML) ===
   {
     id: 'mz',
     name: 'Ministerstwo Zdrowia',
     institution: 'Ministerstwo Zdrowia',
-    baseUrl: 'https://www.gov.pl/web/zdrowie',
-    apiEndpoint: 'https://www.gov.pl/api/eli/mz',
-    format: 'json-ld',
+    baseUrl: 'https://dziennikmz.mz.gov.pl',
+    apiEndpoint: 'https://dziennikmz.mz.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MZ',
     active: true,
-    priority: 2,
+    priority: 1,
     category: 'Zdrowie',
-    description: 'Akty prawne z zakresu zdrowia publicznego'
+    description: 'Dziennik Urzędowy MZ - zarządzenia Ministra Zdrowia'
   },
   {
-    id: 'mf',
-    name: 'Ministerstwo Finansów',
-    institution: 'Ministerstwo Finansów',
-    baseUrl: 'https://www.gov.pl/web/finanse',
-    apiEndpoint: 'https://www.gov.pl/api/eli/mf',
-    format: 'json-ld',
+    id: 'mswia',
+    name: 'MSWiA - Ministerstwo Spraw Wewnętrznych',
+    institution: 'MSWiA',
+    baseUrl: 'https://edziennik.mswia.gov.pl',
+    apiEndpoint: 'https://edziennik.mswia.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MSW',
     active: true,
     priority: 2,
-    category: 'Finanse publiczne',
-    description: 'Przepisy podatkowe, budżetowe, celne'
+    category: 'Służby mundurowe',
+    description: 'Dziennik Urzędowy MSWiA - zarządzenia służb mundurowych'
   },
   {
-    id: 'me',
+    id: 'men',
     name: 'Ministerstwo Edukacji',
-    institution: 'Ministerstwo Edukacji i Nauki',
-    baseUrl: 'https://www.gov.pl/web/edukacja-i-nauka',
-    apiEndpoint: 'https://www.gov.pl/api/eli/me',
-    format: 'json-ld',
+    institution: 'Ministerstwo Edukacji Narodowej',
+    baseUrl: 'https://dziennik.men.gov.pl',
+    apiEndpoint: 'https://dziennik.men.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MEN',
     active: true,
     priority: 2,
     category: 'Edukacja',
-    description: 'Prawo oświatowe i szkolnictwo wyższe'
+    description: 'Dziennik Urzędowy MEN - zarządzenia oświatowe'
   },
-  
-  // === PRIORITY 3: AGENCJE I URZĘDY ===
   {
-    id: 'urpl',
-    name: 'Urząd Rejestracji Produktów Leczniczych',
-    institution: 'URPL',
-    baseUrl: 'https://urpl.gov.pl',
-    apiEndpoint: 'https://urpl.gov.pl/api/eli',
-    format: 'json-ld',
+    id: 'mon',
+    name: 'Ministerstwo Obrony Narodowej',
+    institution: 'MON',
+    baseUrl: 'https://dziennik.mon.gov.pl',
+    apiEndpoint: 'https://dziennik.mon.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MON',
+    active: true,
+    priority: 2,
+    category: 'Wojsko',
+    description: 'Dziennik Urzędowy MON - zarządzenia wojskowe'
+  },
+  {
+    id: 'mkidn',
+    name: 'Ministerstwo Kultury',
+    institution: 'Ministerstwo Kultury i Dziedzictwa Narodowego',
+    baseUrl: 'https://dziennik.kultura.gov.pl',
+    apiEndpoint: 'https://dziennik.kultura.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MKIDN',
     active: true,
     priority: 3,
-    category: 'Leki i wyroby medyczne',
-    description: 'Rejestry leków, decyzje administracyjne URPL'
+    category: 'Kultura',
+    description: 'Dziennik Urzędowy MKiDN'
+  },
+  {
+    id: 'klimat',
+    name: 'Ministerstwo Klimatu',
+    institution: 'Ministerstwo Klimatu i Środowiska',
+    baseUrl: 'https://dziennik.klimat.gov.pl',
+    apiEndpoint: 'https://dziennik.klimat.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_MK',
+    active: true,
+    priority: 3,
+    category: 'Środowisko',
+    description: 'Dziennik Urzędowy MK - ochrona środowiska'
+  },
+  {
+    id: 'uprp',
+    name: 'Urząd Patentowy RP',
+    institution: 'UPRP',
+    baseUrl: 'https://edziennik.uprp.gov.pl',
+    apiEndpoint: 'https://edziennik.uprp.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_UPRP',
+    active: true,
+    priority: 3,
+    category: 'Własność intelektualna',
+    description: 'Dziennik Urzędowy UPRP'
   },
   {
     id: 'gus',
     name: 'Główny Urząd Statystyczny',
     institution: 'GUS',
-    baseUrl: 'https://stat.gov.pl',
-    apiEndpoint: 'https://api.stat.gov.pl/eli',
-    format: 'json-ld',
+    baseUrl: 'https://dziennikurzedowy.stat.gov.pl',
+    apiEndpoint: 'https://dziennikurzedowy.stat.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_GUS',
     active: true,
     priority: 3,
-    category: 'Statystyka publiczna',
-    description: 'Obwieszczenia i komunikaty GUS'
+    category: 'Statystyka',
+    description: 'Dziennik Urzędowy GUS'
   },
   {
-    id: 'uokik',
-    name: 'Urząd Ochrony Konkurencji i Konsumentów',
-    institution: 'UOKiK',
-    baseUrl: 'https://www.uokik.gov.pl',
-    apiEndpoint: 'https://www.uokik.gov.pl/api/eli',
-    format: 'json-ld',
-    active: false, // Do weryfikacji
+    id: 'pgr',
+    name: 'Prokuratoria Generalna RP',
+    institution: 'Prokuratoria Generalna',
+    baseUrl: 'https://edziennik.pgr.gov.pl',
+    apiEndpoint: 'https://edziennik.pgr.gov.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_PGR',
+    active: true,
     priority: 3,
-    category: 'Konkurencja i konsumenci',
-    description: 'Decyzje UOKiK, interpretacje'
+    category: 'Prokuratoria',
+    description: 'Dziennik Urzędowy PGR'
   },
-  
-  // === PRIORITY 4: SAMORZĄDY (przykłady) ===
   {
-    id: 'bip-warszawa',
-    name: 'BIP m.st. Warszawy',
-    institution: 'Urząd m.st. Warszawy',
-    baseUrl: 'https://bip.warszawa.pl',
-    apiEndpoint: 'https://bip.warszawa.pl/api/eli',
-    format: 'json-ld',
-    active: false, // Wymaga weryfikacji
-    priority: 4,
-    category: 'Prawo lokalne',
-    description: 'Uchwały Rady m.st. Warszawy'
-  },
-  
-  // === PRIORITY 5: INNE ŹRÓDŁA ===
-  {
-    id: 'monitor-polski',
-    name: 'Monitor Polski',
-    institution: 'Monitor Polski',
-    baseUrl: 'https://monitorpolski.gov.pl',
-    apiEndpoint: 'https://monitorpolski.gov.pl/api/eli',
-    format: 'json-ld',
+    id: 'nbp',
+    name: 'Narodowy Bank Polski',
+    institution: 'NBP',
+    baseUrl: 'https://dzu.nbp.pl',
+    apiEndpoint: 'https://dzu.nbp.pl/api/eli/acts',
+    format: 'xml',
+    clientType: 'B',
+    dziennikId: 'DUM_NBP',
     active: true,
     priority: 2,
-    category: 'Publikator prawny',
-    description: 'Oficjalny dziennik promulgacyjny RP'
+    category: 'Bank centralny',
+    description: 'Dziennik Urzędowy NBP'
   },
-  {
-    id: 'dziennik-ustaw',
-    name: 'Dziennik Ustaw RP',
-    institution: 'Dziennik Ustaw',
-    baseUrl: 'https://dziennikustaw.gov.pl',
-    apiEndpoint: 'https://dziennikustaw.gov.pl/api/eli',
-    format: 'json-ld',
-    active: true,
-    priority: 1,
-    category: 'Publikator prawny',
-    description: 'Główny publikator aktów normatywnych'
-  }
+  
+  // === UWAGA: Systemy BEZ API ELI (wymagają scrapingu HTML) ===
+  // - NFZ Centrala (baw.nfz.gov.pl) - już zaimplementowany jako nfzScraper
+  // - Ministerstwo Finansów - dziennik wygaszony
+  // - KPRM - publikuje głównie w M.P. (obsługiwane przez Sejm)
 ];
 
 // Filtruj tylko aktywne źródła

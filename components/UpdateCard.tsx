@@ -20,9 +20,9 @@ const SingleUpdate: React.FC<{
 }> = ({ update, onSave, saved, isSelected, onToggleSelection }) => {
 
   const methodLabel = {
-    eli: 'Protokół ELI API',
+    eli: 'API Sejmu (JSON/ELI)',
     rss: 'Kanał RSS/XML',
-    scraper: 'Silnik Scrapera NFZ'
+    scraper: 'Silnik Scrapera HTML'
   };
 
   const methodBadge = {
@@ -93,7 +93,13 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, loading, onSave, isSav
   if (loading) {
     return (
       <div className="space-y-6">
-        {[1, 2, 3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded animate-pulse"></div>)}
+        <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+            <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">Pobieranie danych z źródeł...</p>
+            <p className="text-[8px] text-slate-400 font-mono">Ingestuję: ELI (Sejm DU+MP, MZ, MSWiA, MEN, MON, NBP) + RSS (ZUS, CEZ) + NFZ</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -103,7 +109,13 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, loading, onSave, isSav
       <div className="space-y-6">
         {updates.length === 0 ? (
           <div className="text-center py-20 bg-white border-2 border-dashed border-slate-200 rounded">
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Brak nowych danych z ELI/RSS/SCRAPER</p>
+            <div className="flex flex-col items-center gap-4">
+              <i className="fas fa-inbox text-4xl text-slate-300"></i>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Brak nowych danych z ELI/RSS/SCRAPER</p>
+              <p className="text-[9px] text-slate-500 max-w-md">
+                Wszystkie źródła zostały sprawdzone. Nie znaleziono nowych aktów prawnych w wybranym okresie.
+              </p>
+            </div>
           </div>
         ) : (
           updates.map((update) => (
