@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LegalUpdate, SystemConfig } from './types';
 import { fetchLegalUpdates, fetchELIUpdates, fetchRSSUpdates, fetchNFZUpdates, exportUpdates } from './services/apiService';
 import UpdateCard from './components/UpdateCard';
+import HealthIndicator from './components/HealthIndicator';
 
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
   masterSites: [
@@ -121,12 +122,20 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
-              {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
-                <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                  {z === '7d' ? '7 dni' : z === '30d' ? '30 dni' : '90 dni'}
-                </button>
-              ))}
+            <div className="flex gap-6 items-start">
+              {/* Health Dashboard */}
+              <div className="w-40">
+                <HealthIndicator />
+              </div>
+
+              {/* Time Range Selector */}
+              <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
+                {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
+                  <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                    {z === '7d' ? '7 dni' : z === '30d' ? '30 dni' : '90 dni'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
