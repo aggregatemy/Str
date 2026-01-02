@@ -1,7 +1,23 @@
 
 import React from 'react';
-import { LegalUpdate, GroundingLink } from '../types';
+import { LegalUpdate, GroundingLink, IngestMethod } from '../types';
 
+/**
+ * Props dla komponentu UpdateCard.
+ * 
+ * @interface UpdateCardProps
+ * @description Właściwości przekazywane do głównego komponentu wyświetlania kart aktualizacji.
+ * Komponent obsługuje wyświetlanie listy aktualizacji prawnych, linków weryfikacyjnych,
+ * stanów ładowania oraz interakcje użytkownika (zapisywanie, zaznaczanie).
+ * 
+ * @property {LegalUpdate[]} updates - Lista aktualizacji prawnych do wyświetlenia
+ * @property {GroundingLink[]} links - Lista linków weryfikacyjnych z Gemini AI
+ * @property {boolean} loading - Czy trwa ładowanie danych
+ * @property {Function} [onSave] - Opcjonalna funkcja wywoływana przy zapisie dokumentu
+ * @property {Function} [isSaved] - Opcjonalna funkcja sprawdzająca czy dokument jest zapisany
+ * @property {string[]} [selectedIds] - Opcjonalna lista ID zaznaczonych dokumentów
+ * @property {Function} [onToggleSelection] - Opcjonalna funkcja przełączania zaznaczenia
+ */
 interface UpdateCardProps {
   updates: LegalUpdate[];
   links: GroundingLink[];
@@ -12,6 +28,28 @@ interface UpdateCardProps {
   onToggleSelection?: (id: string) => void;
 }
 
+/**
+ * Komponent pojedynczej karty aktualizacji prawnej.
+ * 
+ * @component
+ * @description Wyświetla szczegółowe informacje o pojedynczej aktualizacji prawnej
+ * w formie karty. Zawiera:
+ * - Checkbox do zaznaczania dokumentu
+ * - Badge z metodą ingestii (ELI/RSS/Scraper)
+ * - Tytuł i kategorię aktualizacji
+ * - Opcjonalny ELI URI
+ * - Status prawny
+ * - Oficjalne uzasadnienie
+ * - Przycisk archiwizacji
+ * 
+ * @param {Object} props - Właściwości komponentu
+ * @param {LegalUpdate} props.update - Obiekt aktualizacji prawnej do wyświetlenia
+ * @param {Function} [props.onSave] - Funkcja wywoływana przy zapisie dokumentu
+ * @param {boolean} [props.saved] - Czy dokument jest zapisany w archiwum
+ * @param {boolean} [props.isSelected] - Czy dokument jest zaznaczony
+ * @param {Function} [props.onToggleSelection] - Funkcja przełączania zaznaczenia
+ * @returns {JSX.Element} Wyrenderowana karta aktualizacji
+ */
 const SingleUpdate: React.FC<{ 
   update: LegalUpdate; 
   onSave?: (u: LegalUpdate) => void;
@@ -20,13 +58,29 @@ const SingleUpdate: React.FC<{
   onToggleSelection?: () => void;
 }> = ({ update, onSave, saved, isSelected, onToggleSelection }) => {
 
-  const methodLabel = {
+  /**
+   * Mapowanie metod ingestii na czytelne etykiety.
+   * 
+   * @description Słownik tłumaczący kody metod na pełne nazwy protokołów:
+   * - eli → "Protokół ELI API"
+   * - rss → "Kanał RSS/XML"
+   * - scraper → "Silnik Scrapera NFZ"
+   */
+  const methodLabel: Record<IngestMethod, string> = {
     eli: 'Protokół ELI API',
     rss: 'Kanał RSS/XML',
     scraper: 'Silnik Scrapera NFZ'
   };
 
-  const methodBadge = {
+  /**
+   * Mapowanie metod ingestii na klasy CSS dla badge'ów.
+   * 
+   * @description Słownik definiujący kolory badge'ów dla różnych metod:
+   * - eli → niebieski (bg-blue-800)
+   * - rss → zielony (bg-green-800)
+   * - scraper → bursztynowy (bg-amber-700)
+   */
+  const methodBadge: Record<IngestMethod, string> = {
     eli: 'bg-blue-800 text-white',
     rss: 'bg-green-800 text-white',
     scraper: 'bg-amber-700 text-white'
@@ -90,6 +144,32 @@ const SingleUpdate: React.FC<{
   );
 };
 
+/**
+ * Główny komponent wyświetlania kart aktualizacji prawnych.
+ * 
+ * @component
+ * @description Komponent odpowiedzialny za renderowanie listy wszystkich aktualizacji prawnych
+ * oraz sekcji z linkami weryfikacyjnymi (grounding links). Obsługuje:
+ * - Stan ładowania z animowanymi placeholderami
+ * - Wyświetlanie komunikatu gdy brak danych
+ * - Mapowanie aktualizacji na komponenty SingleUpdate
+ * - Wyświetlanie zweryfikowanych punktów danych (grounding links)
+ * - Przekazywanie callbacków do komponentów podrzędnych
+ * 
+ * @param {UpdateCardProps} props - Właściwości komponentu
+ * @returns {JSX.Element} Wyrenderowana lista kart aktualizacji z linkami weryfikacyjnymi
+ * 
+ * @example
+ * <UpdateCard 
+ *   updates={legalUpdates} 
+ *   links={groundingLinks} 
+ *   loading={false}
+ *   onSave={(update) => handleSave(update)}
+ *   isSaved={(id) => savedIds.includes(id)}
+ *   selectedIds={selected}
+ *   onToggleSelection={(id) => toggleSelection(id)}
+ * />
+ */
 const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave, isSaved, selectedIds = [], onToggleSelection }) => {
   if (loading) {
     return (
