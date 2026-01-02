@@ -3,7 +3,7 @@ import { fetchLegalUpdates, exportUpdates } from '../services/apiService';
 
 // Mock globalnego fetch
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 beforeEach(() => {
   vi.clearAllMocks();

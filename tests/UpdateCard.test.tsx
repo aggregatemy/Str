@@ -65,7 +65,7 @@ describe('UpdateCard Component', () => {
     );
     
     // Znajdź checkbox i kliknij
-    const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const checkbox = document.querySelector('input[type="checkbox"]');
     expect(checkbox).toBeTruthy();
     checkbox?.click();
     expect(onToggleMock).toHaveBeenCalled();

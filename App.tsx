@@ -5,6 +5,79 @@ import { fetchLegalUpdates, fetchELIUpdates, fetchRSSUpdates, fetchNFZUpdates, e
 import UpdateCard from './components/UpdateCard';
 import HealthIndicator from './components/HealthIndicator';
 
+// Helper function to get range label
+function getRangeLabel(range: ZakresCzasu): string {
+  switch (range) {
+    case '7d':
+      return '7 dni';
+    case '30d':
+      return '30 dni';
+    case '90d':
+      return '90 dni';
+    default:
+      return '7 dni';
+  }
+}
+
+// Helper function to get error class name
+function getErrorClassName(errorType: 'network' | 'server' | 'data'): string {
+  const baseClasses = 'mb-8 p-6 border-2 rounded';
+  switch (errorType) {
+    case 'network':
+      return `${baseClasses} bg-red-50 border-red-200`;
+    case 'server':
+      return `${baseClasses} bg-orange-50 border-orange-200`;
+    case 'data':
+      return `${baseClasses} bg-yellow-50 border-yellow-200`;
+    default:
+      return baseClasses;
+  }
+}
+
+// Helper function to get error icon class
+function getErrorIconClass(errorType: string): string {
+  const baseClasses = 'fas text-xl';
+  switch (errorType) {
+    case 'network':
+      return `${baseClasses} fa-wifi text-red-600`;
+    case 'server':
+      return `${baseClasses} fa-exclamation-triangle text-orange-600`;
+    case 'data':
+      return `${baseClasses} fa-database text-yellow-600`;
+    default:
+      return baseClasses;
+  }
+}
+
+// Helper function to get error title class
+function getErrorTitleClass(errorType: string): string {
+  const baseClasses = 'text-[10px] font-black uppercase tracking-widest mb-2';
+  switch (errorType) {
+    case 'network':
+      return `${baseClasses} text-red-800`;
+    case 'server':
+      return `${baseClasses} text-orange-800`;
+    case 'data':
+      return `${baseClasses} text-yellow-800`;
+    default:
+      return baseClasses;
+  }
+}
+
+// Helper function to get source badge class
+function getSourceBadgeClass(sourceType: string): string {
+  switch (sourceType) {
+    case 'eli':
+      return 'bg-blue-600 text-white';
+    case 'rss':
+      return 'bg-green-600 text-white';
+    case 'scraper':
+      return 'bg-amber-700 text-white';
+    default:
+      return 'bg-slate-600 text-white';
+  }
+}
+
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
   masterSites: [
     // === KLIENT A: PARLAMENT (JSON) ===
@@ -132,7 +205,7 @@ const App: React.FC = () => {
               <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
                 {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
                   <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                    {z === '7d' ? '7 dni' : z === '30d' ? '30 dni' : '90 dni'}
+                    {getRangeLabel(z)}
                   </button>
                 ))}
               </div>
@@ -174,11 +247,11 @@ const App: React.FC = () => {
         </div>
 
         {blad && (
-          <div className={`mb-8 p-6 border-2 rounded ${blad.type === 'network' ? 'bg-red-50 border-red-200' : blad.type === 'server' ? 'bg-orange-50 border-orange-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className={getErrorClassName(blad.type)}>
             <div className="flex items-start gap-4">
-              <i className={`fas ${blad.type === 'network' ? 'fa-wifi text-red-600' : blad.type === 'server' ? 'fa-exclamation-triangle text-orange-600' : 'fa-database text-yellow-600'} text-xl`}></i>
+              <i className={getErrorIconClass(blad.type)}></i>
               <div className="flex-1">
-                <h3 className="text-[10px] font-black uppercase tracking-widest mb-2 ${blad.type === 'network' ? 'text-red-800' : blad.type === 'server' ? 'text-orange-800' : 'text-yellow-800'}">Błąd Systemu</h3>
+                <h3 className={getErrorTitleClass(blad.type)}>Błąd Systemu</h3>
                 <p className="text-[11px] text-slate-700 leading-relaxed mb-4">{blad.message}</p>
                 <div className="flex gap-3">
                   <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} title="Ponownie załaduj dane" className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
@@ -205,7 +278,7 @@ const App: React.FC = () => {
               {config.masterSites.map(site => (
                 <div key={site.id} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-200">
                   <div className="flex items-center gap-4">
-                    <span className={`w-10 h-10 rounded flex items-center justify-center text-[10px] font-black text-white ${site.type === 'eli' ? 'bg-blue-600' : site.type === 'rss' ? 'bg-green-600' : 'bg-orange-600'}`}>
+                    <span className={`w-10 h-10 rounded flex items-center justify-center text-[10px] font-black text-white ${getSourceBadgeClass(site.type)}`}>
                       {site.type.toUpperCase()}
                     </span>
                     <div className="flex flex-col">
@@ -213,7 +286,11 @@ const App: React.FC = () => {
                       <span className="text-[8px] text-slate-400 font-mono tracking-tight">Endpoint: {site.url}</span>
                     </div>
                   </div>
-                  <button onClick={() => setConfig({...config, masterSites: config.masterSites.map(s => s.id === site.id ? {...s, isActive: !s.isActive} : s)})} className={`w-12 h-6 rounded-full relative transition-all ${site.isActive ? 'bg-slate-900' : 'bg-slate-300'}`}>
+                  <button 
+                    title={`${site.isActive ? 'Wyłącz' : 'Włącz'} ${site.name}`}
+                    onClick={() => setConfig({...config, masterSites: config.masterSites.map(s => s.id === site.id ? {...s, isActive: !s.isActive} : s)})} 
+                    className={`w-12 h-6 rounded-full relative transition-all ${site.isActive ? 'bg-slate-900' : 'bg-slate-300'}`}
+                    aria-label={`Przełącz ${site.name}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${site.isActive ? 'left-[26px]' : 'left-[6px]'}`}></div>
                   </button>
                 </div>
@@ -224,8 +301,8 @@ const App: React.FC = () => {
           <UpdateCard 
             updates={filtrowaneZmiany} 
             loading={laduje} 
-            onSave={(u) => setZapisane(prev => prev.find(x => x.id === u.id) ? prev.filter(x => x.id !== u.id) : [...prev, u])}
-            isSaved={(id) => !!zapisane.find(u => u.id === id)}
+            onSave={(u) => setZapisane(prev => prev.some(x => x.id === u.id) ? prev.filter(x => x.id !== u.id) : [...prev, u])}
+            isSaved={(id) => zapisane.some(u => u.id === id)}
             selectedIds={zaznaczone}
             onToggleSelection={(id) => setZaznaczone(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
           />
@@ -236,7 +313,6 @@ const App: React.FC = () => {
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2">
           <button 
             onClick={async () => {
-              const wybrane = zmiany.filter(u => zaznaczone.includes(u.id));
               setRaportOtwarty(true);
               setGenerujeRaport(true);
               try {

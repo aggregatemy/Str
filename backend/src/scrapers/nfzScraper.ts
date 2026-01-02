@@ -1,6 +1,17 @@
 import { chromium } from 'playwright';
 import { LegalFact } from '../types/index.js';
 
+// Helper function to build NFZ URL
+function buildNfzUrl(link: string | null | undefined): string {
+  if (link?.startsWith('http')) {
+    return link;
+  }
+  if (link) {
+    return `https://baw.nfz.gov.pl${link}`;
+  }
+  return 'https://baw.nfz.gov.pl/NFZ/tabBrowser/mainPage';
+}
+
 /**
  * NFZ BAW (Baza Aktów Własnych) - Scraper z Playwright
  * Obsługuje DevExpress Grid z JavaScript-ową renderacją
@@ -66,23 +77,23 @@ export async function scrapeNFZ(): Promise<LegalFact[]> {
     console.log(`📊 NFZ: Znaleziono ${facts.length} zarządzeń`);
 
     // Mapuj na LegalFact
-    const legalFacts: LegalFact[] = facts.map((fact, idx) => ({
-      id: `nfz-${fact.number.replace(/\//g, '-')}-${idx}`,
-      ingestMethod: 'scraper',
-      eliUri: null,
-      title: fact.title,
-      summary: fact.title,
-      date: parseNFZDate(fact.date),
-      impact: 'medium',
-      category: 'NFZ Zarządzenia',
-      legalStatus: 'published',
-      officialRationale: '',
-      sourceUrl: fact.link && fact.link.startsWith('http') 
-        ? fact.link 
-        : fact.link 
-          ? `https://baw.nfz.gov.pl${fact.link}`
-          : 'https://baw.nfz.gov.pl/NFZ/tabBrowser/mainPage'
-    }));
+    const legalFacts: LegalFact[] = facts.map((fact, idx) => {
+      const sourceUrl = buildNfzUrl(fact.link);
+      
+      return {
+        id: `nfz-${fact.number.replaceAll('/', '-')}-${idx}`,
+        ingestMethod: 'scraper',
+        eliUri: null,
+        title: fact.title,
+        summary: fact.title,
+        date: parseNFZDate(fact.date),
+        impact: 'medium',
+        category: 'NFZ Zarządzenia',
+        legalStatus: 'published',
+        officialRationale: '',
+        sourceUrl
+      };
+    });
 
     return legalFacts;
   } catch (error: any) {
@@ -139,21 +150,25 @@ async function scrapeNFZAlternative(): Promise<LegalFact[]> {
 
     console.log(`📊 NFZ Alternative: Znaleziono ${facts.length} ogłoszeń`);
 
-    const legalFacts: LegalFact[] = facts.map((fact, idx) => ({
-      id: `nfz-alt-${idx}`,
-      ingestMethod: 'scraper',
-      eliUri: null,
-      title: fact.title,
-      summary: fact.title,
-      date: new Date().toISOString().split('T')[0],
-      impact: 'medium',
-      category: 'NFZ Zarządzenia',
-      legalStatus: 'published',
-      officialRationale: '',
-      sourceUrl: fact.link && fact.link.startsWith('http') 
+    const legalFacts: LegalFact[] = facts.map((fact, idx) => {
+      const sourceUrl = fact.link?.startsWith('http') 
         ? fact.link 
-        : `https://www.nfz.gov.pl${fact.link}`
-    }));
+        : `https://www.nfz.gov.pl${fact.link}`;
+      
+      return {
+        id: `nfz-alt-${idx}`,
+        ingestMethod: 'scraper',
+        eliUri: null,
+        title: fact.title,
+        summary: fact.title,
+        date: new Date().toISOString().split('T')[0],
+        impact: 'medium',
+        category: 'NFZ Zarządzenia',
+        legalStatus: 'published',
+        officialRationale: '',
+        sourceUrl
+      };
+    });
 
     return legalFacts;
   } finally {

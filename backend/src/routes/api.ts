@@ -88,10 +88,11 @@ const router = express.Router();
 router.get('/updates', async (req, res) => {
   const timestamp = new Date().toISOString();
   try {
-    const { range, method } = req.query;
-    console.log(`📊 [${timestamp}] Pobieranie updates: range=${range}, method=${method}`);
+    const rangeParam = req.query.range as string;
+    const methodParam = req.query.method as string;
+    console.log(`📊 [${timestamp}] Pobieranie updates: range=${rangeParam}, method=${methodParam}`);
     
-    const data = await getData(range as string, method as string);
+    const data = await getData(rangeParam, methodParam);
     
     console.log(`✅ [${timestamp}] Zwracam ${data.length} rekordów`);
     res.json(data);
@@ -197,10 +198,11 @@ router.post('/export/extract', async (req, res) => {
 router.get('/updates/eli', async (req, res) => {
   const timestamp = new Date().toISOString();
   try {
-    const { range, source } = req.query;
-    console.log(`📊 [${timestamp}] Pobieranie ELI updates: range=${range}, source=${source}`);
+    const rangeParam = req.query.range as string;
+    const sourceParam = req.query.source as string;
+    console.log(`📊 [${timestamp}] Pobieranie ELI updates: range=${rangeParam}, source=${sourceParam}`);
     
-    const data = await getData(range as string, 'eli', source as string);
+    const data = await getData(rangeParam, 'eli', sourceParam);
     
     console.log(`✅ [${timestamp}] Zwracam ${data.length} dokumentów ELI`);
     res.json(data);
@@ -235,10 +237,11 @@ router.get('/updates/eli', async (req, res) => {
 router.get('/updates/rss', async (req, res) => {
   const timestamp = new Date().toISOString();
   try {
-    const { range, source } = req.query;
-    console.log(`📊 [${timestamp}] Pobieranie RSS updates: range=${range}, source=${source}`);
+    const rangeParam = req.query.range as string;
+    const sourceParam = req.query.source as string;
+    console.log(`📊 [${timestamp}] Pobieranie RSS updates: range=${rangeParam}, source=${sourceParam}`);
     
-    const data = await getData(range as string, 'rss', source as string);
+    const data = await getData(rangeParam, 'rss', sourceParam);
     
     console.log(`✅ [${timestamp}] Zwracam ${data.length} dokumentów RSS`);
     res.json(data);
@@ -273,10 +276,10 @@ router.get('/updates/rss', async (req, res) => {
 router.get('/updates/nfz', async (req, res) => {
   const timestamp = new Date().toISOString();
   try {
-    const { range } = req.query;
-    console.log(`📊 [${timestamp}] Pobieranie NFZ updates: range=${range}`);
+    const rangeParam = req.query.range as string;
+    console.log(`📊 [${timestamp}] Pobieranie NFZ updates: range=${rangeParam}`);
     
-    const data = await getData(range as string, 'scraper');
+    const data = await getData(rangeParam, 'scraper');
     
     console.log(`✅ [${timestamp}] Zwracam ${data.length} dokumentów NFZ`);
     res.json(data);

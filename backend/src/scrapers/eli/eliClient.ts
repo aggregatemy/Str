@@ -7,8 +7,8 @@ import { LegalFact } from '../../types/index.js';
  * Uniwersalny klient ELI
  */
 export class ELIClient {
-  private source: ELISource;
-  private timeout: number = 30000; // 30 sekund
+  private readonly source: ELISource;
+  private readonly timeout: number = 30000; // 30 sekund
 
   constructor(source: ELISource) {
     this.source = source;
@@ -246,7 +246,7 @@ export class ELIClient {
    * Parsuj odpowiedź z Klienta A (Sejm JSON)
    */
   private parseClientAResponse(data: any, position: number, year: number): LegalFact | null {
-    if (!data || !data.title) return null;
+    if (!data?.title) return null;
     
     const eliUri = data.ELI || `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${year}/${position}`;
     
@@ -271,20 +271,25 @@ export class ELIClient {
   private parseClientBResponse(xmlData: string, position: number, year: number): LegalFact | null {
     try {
       // Prosta ekstrakcja z XML (można rozbudować)
-      const titleMatch = xmlData.match(/<title[^>]*>(.*?)<\/title>/i);
-      const dateMatch = xmlData.match(/<date[^>]*>(.*?)<\/date>/i) || 
-                       xmlData.match(/<publicationDate[^>]*>(.*?)<\/publicationDate>/i);
+      const titleRegex = /<title[^>]*>(.*?)<\/title>/i;
+      const dateRegex1 = /<date[^>]*>(.*?)<\/date>/i;
+      const dateRegex2 = /<publicationDate[^>]*>(.*?)<\/publicationDate>/i;
+      
+      const titleMatch = titleRegex.exec(xmlData);
+      const dateMatch = dateRegex1.exec(xmlData) || dateRegex2.exec(xmlData);
       
       if (!titleMatch) return null;
       
       const eliUri = `${this.source.baseUrl}/eli/acts/${this.source.dziennikId}/${year}/${position}`;
       
+      const cleanedTitle = titleMatch[1].replaceAll(/<[^>]*>/g, '').trim();
+      
       return {
         id: `${this.source.id}-${year}-${position}`,
         ingestMethod: 'eli',
         eliUri,
-        title: titleMatch[1].replace(/<[^>]*>/g, '').trim(),
-        summary: titleMatch[1].replace(/<[^>]*>/g, '').trim().substring(0, 200),
+        title: cleanedTitle,
+        summary: cleanedTitle.substring(0, 200),
         date: dateMatch ? dateMatch[1].trim() : new Date().toISOString().split('T')[0],
         impact: 'medium',
         category: this.source.category,

@@ -2,7 +2,7 @@
 import '@testing-library/react';
 
 // Mock window.matchMedia (używane przez niektóre komponenty)
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(globalThis, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
     matches: false,

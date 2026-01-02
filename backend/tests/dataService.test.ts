@@ -32,7 +32,7 @@ describe('dataService - Testy jednostkowe', () => {
     });
 
     it('powinien filtrować po dacie (7 dni)', async () => {
-      const result = await getData('7d', undefined);
+      const result = await getData('7d');
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       

@@ -34,9 +34,7 @@ export class ELIParser {
     const results: LegalFact[] = [];
     
     // Obsługa single document i array
-    const docs: ELIDocument[] = Array.isArray(data) ? data : 
-                                 data['@graph'] ? data['@graph'] :
-                                 [data];
+    const docs: ELIDocument[] = this.extractDocuments(data);
 
     for (const doc of docs) {
       try {
@@ -48,6 +46,15 @@ export class ELIParser {
     }
 
     return results;
+  }
+
+  /**
+   * Ekstrakcja dokumentów z różnych formatów
+   */
+  private static extractDocuments(data: any): ELIDocument[] {
+    if (Array.isArray(data)) return data;
+    if (data['@graph']) return data['@graph'];
+    return [data];
   }
 
   /**
@@ -70,9 +77,7 @@ export class ELIParser {
     
     // Status prawny
     const inForce = doc['eli:in_force'];
-    const legalStatus = typeof inForce === 'boolean' ? 
-      (inForce ? 'in_force' : 'repealed') : 
-      (inForce || 'unknown');
+    const legalStatus = this.determineLegalStatus(inForce);
 
     return {
       id: `eli-${sourceId}-${this.sanitizeId(eliId)}`,
@@ -138,7 +143,7 @@ export class ELIParser {
   private static parseDate(dateStr: string): string {
     try {
       const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
+      if (!Number.isNaN(date.getTime())) {
         return date.toISOString().split('T')[0];
       }
     } catch {}
@@ -151,8 +156,8 @@ export class ELIParser {
    */
   private static cleanText(text: string): string {
     return text
-      .replace(/\s+/g, ' ')
-      .replace(/\n+/g, ' ')
+      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/\n+/g, ' ')
       .trim();
   }
 
@@ -161,9 +166,19 @@ export class ELIParser {
    */
   private static sanitizeId(id: string): string {
     return id
-      .replace(/[^a-zA-Z0-9\-_\/]/g, '-')
-      .replace(/^https?:\/\//, '')
-      .replace(/\/$/, '');
+      .replaceAll(/[^a-zA-Z0-9\-_/]/g, '-')
+      .replaceAll(/^https?:\/\//, '')
+      .replaceAll(/\/$/, '');
+  }
+
+  /**
+   * Określ status prawny dokumentu
+   */
+  private static determineLegalStatus(inForce: any): string {
+    if (typeof inForce === 'boolean') {
+      return inForce ? 'in_force' : 'repealed';
+    }
+    return inForce || 'unknown';
   }
 
   /**

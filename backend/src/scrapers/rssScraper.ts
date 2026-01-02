@@ -29,8 +29,8 @@ export async function scrapeRSS(url: string, source: string): Promise<LegalFact[
       
       // Czyść problematyczne znaczniki
       let cleanedXml = response.data
-        .replace(/<\/[^>]*?>/g, (match: string) => match.toLowerCase()) // lowercase closing tags
-        .replace(/<[^/>][^>]*?>/g, (match: string) => match.toLowerCase()); // lowercase opening tags
+        .replaceAll(/<\/[^>]*?>/g, (match: string) => match.toLowerCase()) // lowercase closing tags
+        .replaceAll(/<[^/>][^>]*?>/g, (match: string) => match.toLowerCase()); // lowercase opening tags
       
       result = await parser.parseStringPromise(cleanedXml);
     }

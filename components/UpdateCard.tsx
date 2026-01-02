@@ -35,11 +35,14 @@ const SingleUpdate: React.FC<{
     <div className={`bg-white border-2 rounded shadow-sm transition-all ${isSelected ? 'border-[#800000]' : 'border-slate-200'}`}>
       <div className="p-8 flex gap-6">
         <div className="pt-2">
+          <label htmlFor={`select-${update.id}`} className="sr-only">Zaznacz dokument</label>
           <input 
+            id={`select-${update.id}`}
             type="checkbox" 
             checked={isSelected} 
             onChange={onToggleSelection}
             className="w-6 h-6 border-slate-300 rounded-none text-[#800000] cursor-pointer"
+            aria-label={`Zaznacz: ${update.title}`}
           />
         </div>
         

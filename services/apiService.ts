@@ -1,4 +1,4 @@
-import { LegalUpdate, IngestMethod } from '../types';
+import { LegalUpdate } from '../types';
 
 // Backend działa na porcie 5554 (izolacja środowiska)
 const API_BASE = '/api/v1';

@@ -99,13 +99,20 @@ export async function refreshData(): Promise<void> {
   console.log(`${'─'.repeat(60)}\n`);
 }
 
+function getRangeDays(range: string | undefined): number {
+  if (range === '7d') return 7;
+  if (range === '30d') return 30;
+  if (range === '90d') return 90;
+  return 120;
+}
+
 export async function getData(range?: string, method?: string, source?: string): Promise<LegalFact[]> {
   const timestamp = new Date().toISOString();
   let whereClause: any = {};
 
   // Filtrowanie po dacie
   if (range) {
-    const days = range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 120;
+    const days = getRangeDays(range);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     whereClause.date = { gte: cutoffDate.toISOString().split('T')[0] };
