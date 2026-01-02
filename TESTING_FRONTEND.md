@@ -43,7 +43,7 @@ npm run test:ui
 - **happy-dom** - lekka symulacja środowiska DOM
 - **@testing-library/user-event** - symulacja interakcji użytkownika
 - **@testing-library/jest-dom** - rozszerzone matchery dla DOM
-- **c8** - narzędzie do generowania raportów pokrycia kodu
+- **@vitest/coverage-v8** - narzędzie do generowania raportów pokrycia kodu
 
 ## Konfiguracja
 
