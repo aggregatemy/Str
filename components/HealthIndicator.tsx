@@ -116,8 +116,8 @@ const HealthIndicator: React.FC = () => {
             <span className="text-[8px] font-black uppercase">🇪🇺 ELI</span>
           </div>
           <div className="text-right">
-            <p className="text-[7px] font-bold text-slate-700">{health.eli.documentsToday} docs</p>
-            <p className="text-[7px] text-slate-600">{getStatusLabel(health.eli.status)}</p>
+            <p className="text-[10px] font-bold text-slate-800">{health.eli.documentsToday} dok.</p>
+            <p className="text-[8px] text-slate-500 font-mono tracking-tight">{health.eli.lastRun ? `ost. ${new Date(health.eli.lastRun).toLocaleTimeString()}` : ''}</p>
           </div>
         </div>
       </div>
@@ -130,8 +130,8 @@ const HealthIndicator: React.FC = () => {
             <span className="text-[8px] font-black uppercase">📡 RSS</span>
           </div>
           <div className="text-right">
-            <p className="text-[7px] font-bold text-slate-700">{health.rss.documentsToday} docs</p>
-            <p className="text-[7px] text-slate-600">{getStatusLabel(health.rss.status)}</p>
+            <p className="text-[10px] font-bold text-slate-800">{health.rss.documentsToday} dok.</p>
+            <p className="text-[8px] text-slate-500 font-mono tracking-tight">{health.rss.lastRun ? `ost. ${new Date(health.rss.lastRun).toLocaleTimeString()}` : ''}</p>
           </div>
         </div>
       </div>
@@ -144,8 +144,8 @@ const HealthIndicator: React.FC = () => {
             <span className="text-[8px] font-black uppercase">🏥 NFZ</span>
           </div>
           <div className="text-right">
-            <p className="text-[7px] font-bold text-slate-700">{health.nfz.documentsToday} docs</p>
-            <p className="text-[7px] text-slate-600">{getStatusLabel(health.nfz.status)}</p>
+            <p className="text-[10px] font-bold text-slate-800">{health.nfz.documentsToday} dok.</p>
+            <p className="text-[8px] text-slate-500 font-mono tracking-tight">{health.nfz.lastRun ? `ost. ${new Date(health.nfz.lastRun).toLocaleTimeString()}` : ''}</p>
           </div>
         </div>
       </div>

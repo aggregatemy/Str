@@ -106,12 +106,17 @@ function getRangeDays(range: string | undefined): number {
   return 120;
 }
 
-export async function getData(range?: string, method?: string, source?: string): Promise<LegalFact[]> {
+export async function getData(range?: string, method?: string, source?: string, date?: string): Promise<LegalFact[]> {
   const timestamp = new Date().toISOString();
   let whereClause: any = {};
 
-  // Filtrowanie po dacie
-  if (range) {
+  // Filtrowanie po konkretnej dacie (ma priorytet nad zakresem)
+  if (date) {
+    whereClause.date = date;
+    console.log(`🔍 [${timestamp}] Filtr daty: ${date}`);
+  } 
+  // Filtrowanie po zakresie (tylko jeśli nie ma konkretnej daty)
+  else if (range) {
     const days = getRangeDays(range);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);

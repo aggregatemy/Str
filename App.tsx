@@ -4,6 +4,7 @@ import { LegalUpdate, SystemConfig } from './types';
 import { fetchLegalUpdates, fetchELIUpdates, fetchRSSUpdates, fetchNFZUpdates, exportUpdates } from './services/apiService';
 import UpdateCard from './components/UpdateCard';
 import HealthIndicator from './components/HealthIndicator';
+import CalendarView from './components/CalendarView';
 
 // Helper function to get range label
 function getRangeLabel(range: ZakresCzasu): string {
@@ -130,6 +131,7 @@ const App: React.FC = () => {
   const [raportOtwarty, setRaportOtwarty] = useState(false);
   const [trescRaportu, setTrescRaportu] = useState('');
   const [generujeRaport, setGenerujeRaport] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => localStorage.setItem('straznik_prawa_v13_konfig', JSON.stringify(config)), [config]);
   useEffect(() => localStorage.setItem('zapisane_v13', JSON.stringify(zapisane)), [zapisane]);
@@ -139,7 +141,12 @@ const App: React.FC = () => {
     try {
       let wynik: LegalUpdate[];
       
-      if (zrodlo === 'eli') {
+      const dateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : undefined;
+
+      if (dateStr) {
+         // Jeśli wybrana data, pobieramy zawsze z głównego endpointu z filtrem daty
+         wynik = await fetchLegalUpdates(undefined, dateStr);
+      } else if (zrodlo === 'eli') {
         wynik = await fetchELIUpdates(zakres);
       } else if (zrodlo === 'rss') {
         wynik = await fetchRSSUpdates(zakres);
@@ -174,7 +181,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (widok === 'glowny') pobierzDane();
-  }, [zakres, zrodlo]);
+  }, [zakres, zrodlo, selectedDate]); // Add selectedDate dependency
 
   const filtrowaneZmiany = useMemo(() => {
     return widok === 'archiwum' ? zapisane : zmiany;
@@ -182,9 +189,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-20">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[#1e293b] flex items-center justify-center rounded-sm">
                  <i className="fas fa-server text-white text-xs"></i>
@@ -195,14 +202,9 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-6 items-start">
-              {/* Health Dashboard */}
-              <div className="w-40">
-                <HealthIndicator />
-              </div>
-
-              {/* Time Range Selector */}
-              <div className="flex bg-slate-100 p-1 rounded border border-slate-200">
+            <div className="flex gap-4 items-center">
+              {/* Time Range Selector (only active if no date selected) */}
+              <div className={`flex bg-slate-100 p-1 rounded border border-slate-200 transition-opacity ${selectedDate ? 'opacity-50 pointer-events-none' : ''}`}>
                 {(['7d', '30d', '90d'] as ZakresCzasu[]).map(z => (
                   <button key={z} onClick={() => setZakres(z)} className={`px-4 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zakres === z ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                     {getRangeLabel(z)}
@@ -211,63 +213,67 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {widok === 'glowny' && (
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setZrodlo('all')} 
-                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-                Wszystkie
-              </button>
-              <button 
-                onClick={() => setZrodlo('eli')} 
-                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'eli' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-                🇪🇺 ELI
-              </button>
-              <button 
-                onClick={() => setZrodlo('rss')} 
-                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'rss' ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-                📡 RSS
-              </button>
-              <button 
-                onClick={() => setZrodlo('nfz')} 
-                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'nfz' ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-                🏥 NFZ
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex items-center gap-8 mb-10 border-b border-slate-200 pb-4">
-          <button onClick={() => setWidok('glowny')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'glowny' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[18px]' : 'text-slate-400'}`}>Dane Faktograficzne</button>
-          <button onClick={() => setWidok('archiwum')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'archiwum' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[18px]' : 'text-slate-400'}`}>Zarchiwizowane</button>
-          <button onClick={() => setWidok('zrodla')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'zrodla' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[18px]' : 'text-slate-400'}`}>Parametry API</button>
-        </div>
-
-        {blad && (
-          <div className={getErrorClassName(blad.type)}>
-            <div className="flex items-start gap-4">
-              <i className={getErrorIconClass(blad.type)}></i>
-              <div className="flex-1">
-                <h3 className={getErrorTitleClass(blad.type)}>Błąd Systemu</h3>
-                <p className="text-[11px] text-slate-700 leading-relaxed mb-4">{blad.message}</p>
-                <div className="flex gap-3">
-                  <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} title="Ponownie załaduj dane" className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
-                    <i className="fas fa-redo mr-2"></i>Ponów próbę
-                  </button>
-                  <button onClick={() => setBlad(null)} title="Zamknij komunikat błędu" className="px-4 py-2 border-2 border-slate-300 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-100 transition-all">
-                    Zamknij
-                  </button>
-                </div>
-              </div>
-            </div>
+      <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-12 gap-8">
+        
+        {/* SIDEBAR */}
+        <aside className="col-span-3 space-y-6">
+          <CalendarView 
+             selectedDate={selectedDate} 
+             onDateChange={setSelectedDate} 
+             highlightedDates={zmiany.map(u => u.date)}
+          />
+          
+          <div className="bg-slate-50 p-4 border border-slate-200 rounded">
+             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Status Systemu (Workers)</h3>
+             <HealthIndicator />
           </div>
-        )}
+        </aside>
+
+        {/* CONTENT */}
+        <div className="col-span-9">
+          <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
+            <div className="flex gap-6">
+               <button onClick={() => setWidok('glowny')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'glowny' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[17px]' : 'text-slate-400'}`}>Dane Faktograficzne</button>
+               <button onClick={() => setWidok('archiwum')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'archiwum' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[17px]' : 'text-slate-400'}`}>Zarchiwizowane</button>
+               <button onClick={() => setWidok('zrodla')} className={`text-[10px] font-black uppercase tracking-widest ${widok === 'zrodla' ? 'text-slate-900 border-b-2 border-slate-900 pb-4 -mb-[17px]' : 'text-slate-400'}`}>Parametry API</button>
+            </div>
+            
+            {widok === 'glowny' && (
+              <div className="flex gap-2">
+                <button onClick={() => setZrodlo('all')} className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'all' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>Wszystkie</button>
+                <button onClick={() => setZrodlo('eli')} className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'eli' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>ELI</button>
+                <button onClick={() => setZrodlo('rss')} className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'rss' ? 'bg-green-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>RSS</button>
+                <button onClick={() => setZrodlo('nfz')} className={`px-3 py-1.5 rounded text-[9px] font-black uppercase transition-all ${zrodlo === 'nfz' ? 'bg-red-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>NFZ</button>
+              </div>
+            )}
+          </div>
+
+          {blad && (
+            <div className={getErrorClassName(blad.type)}>
+               {/* Error Component Content SAME as before */}
+                <div className="flex items-start gap-4">
+                  <i className={getErrorIconClass(blad.type)}></i>
+                  <div className="flex-1">
+                    <h3 className={getErrorTitleClass(blad.type)}>Błąd Systemu</h3>
+                    <p className="text-[11px] text-slate-700 leading-relaxed mb-4">{blad.message}</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => { setBlad(null); setRetryCount(0); pobierzDane(); }} className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase hover:bg-black transition-all">
+                        <i className="fas fa-redo mr-2"></i>Ponów próbę
+                      </button>
+                      <button onClick={() => setBlad(null)} className="px-4 py-2 border-2 border-slate-300 text-slate-700 text-[9px] font-black uppercase hover:bg-slate-100 transition-all">
+                        Zamknij
+                      </button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          )}
 
         {widok === 'zrodla' ? (
-          <div className="bg-white border border-slate-200 p-10 space-y-8">
+          <div className="bg-white border border-slate-200 p-4 space-y-8">
             <h2 className="text-[11px] font-black uppercase text-slate-800 tracking-widest flex items-center gap-3">
                <i className="fas fa-microchip"></i> Architektura Ingestii Backendu
             </h2>
@@ -276,22 +282,22 @@ const App: React.FC = () => {
             </p>
             <div className="grid grid-cols-1 gap-3">
               {config.masterSites.map(site => (
-                <div key={site.id} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-200">
+                <div key={site.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200">
                   <div className="flex items-center gap-4">
-                    <span className={`w-10 h-10 rounded flex items-center justify-center text-[10px] font-black text-white ${getSourceBadgeClass(site.type)}`}>
+                    <span className={`w-8 h-8 rounded flex items-center justify-center text-[9px] font-black text-white ${getSourceBadgeClass(site.type)}`}>
                       {site.type.toUpperCase()}
                     </span>
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-800 uppercase">{site.name}</span>
-                      <span className="text-[8px] text-slate-400 font-mono tracking-tight">Endpoint: {site.url}</span>
+                      <span className="text-[9px] font-black text-slate-800 uppercase">{site.name}</span>
+                      <span className="text-[8px] text-slate-400 font-mono tracking-tight">{site.url}</span>
                     </div>
                   </div>
-                  <button 
+                   <button 
                     title={`${site.isActive ? 'Wyłącz' : 'Włącz'} ${site.name}`}
                     onClick={() => setConfig({...config, masterSites: config.masterSites.map(s => s.id === site.id ? {...s, isActive: !s.isActive} : s)})} 
-                    className={`w-12 h-6 rounded-full relative transition-all ${site.isActive ? 'bg-slate-900' : 'bg-slate-300'}`}
+                    className={`w-10 h-5 rounded-full relative transition-all ${site.isActive ? 'bg-slate-900' : 'bg-slate-300'}`}
                     aria-label={`Przełącz ${site.name}`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${site.isActive ? 'left-[26px]' : 'left-[6px]'}`}></div>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow transition-all ${site.isActive ? 'left-[24px]' : 'left-[4px]'}`}></div>
                   </button>
                 </div>
               ))}
@@ -307,6 +313,7 @@ const App: React.FC = () => {
             onToggleSelection={(id) => setZaznaczone(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
           />
         )}
+        </div>
       </main>
 
       {zaznaczone.length > 0 && widok === 'glowny' && (

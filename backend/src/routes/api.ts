@@ -17,14 +17,23 @@ const router = express.Router();
  *           type: string
  *           enum: [7d, 30d, 90d]
  *         description: Zakres czasowy (7, 30 lub 90 dni)
- *         example: 30d
  *       - in: query
  *         name: method
  *         schema:
  *           type: string
  *           enum: [eli, rss, scraper]
  *         description: Metoda ingestii danych
- *         example: eli
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *         description: Konkretne źródło (np. 'eli-sejm-du', 'eli-mz')
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Konkretna data (YYYY-MM-DD)
  *     responses:
  *       200:
  *         description: Lista aktów prawnych
@@ -84,15 +93,17 @@ const router = express.Router();
  *                   type: string
  *                 timestamp:
  *                   type: string
- */
+ *  */
 router.get('/updates', async (req, res) => {
   const timestamp = new Date().toISOString();
   try {
     const rangeParam = req.query.range as string;
     const methodParam = req.query.method as string;
-    console.log(`📊 [${timestamp}] Pobieranie updates: range=${rangeParam}, method=${methodParam}`);
+    const dateParam = req.query.date as string;
+    console.log(`📊 [${timestamp}] Pobieranie updates: range=${rangeParam}, method=${methodParam}, date=${dateParam}`);
     
-    const data = await getData(rangeParam, methodParam);
+    // Pass undefined for source, and dateParam as 4th argument
+    const data = await getData(rangeParam, methodParam, undefined, dateParam);
     
     console.log(`✅ [${timestamp}] Zwracam ${data.length} rekordów`);
     res.json(data);

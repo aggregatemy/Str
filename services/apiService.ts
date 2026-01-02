@@ -38,10 +38,11 @@ function mapToLegalUpdate(item: unknown): LegalUpdate | null {
   return item;
 }
 
-export async function fetchLegalUpdates(range?: string): Promise<LegalUpdate[]> {
+export async function fetchLegalUpdates(range?: string, date?: string): Promise<LegalUpdate[]> {
   try {
     const params = new URLSearchParams();
     if (range) params.set('range', range);
+    if (date) params.set('date', date);
 
     const response = await fetchWithTimeout(`${API_BASE}/updates?${params}`);
     
