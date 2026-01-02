@@ -1,0 +1,1 @@
+Plik przeniesiony do DOKUMENTACJA_ZAPLECZA.md zgodnie z wymogiem czystości języka polskiego.

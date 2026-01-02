@@ -1,6 +1,6 @@
 {
-  "name": "Strażnik Prawa - Monitoring Legislacyjny",
-  "description": "Inteligentna platforma do monitorowania zmian w prawie na podstawie wskazanych serwisów legislacyjnych i rządowych, wykorzystująca model Gemini do analizy i podsumowania nowości prawnych.",
+  "name": "Strażnik Prawa Medycznego",
+  "description": "System monitorowania polskich źródeł prawa: Narodowy Fundusz Zdrowia, Zakład Ubezpieczeń Społecznych, Dziennik Ustaw, Monitor Polski oraz organy administracji rządowej i samorządowej.",
   "requestFramePermissions": [
     "geolocation"
   ]

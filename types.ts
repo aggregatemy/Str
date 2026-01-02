@@ -1,21 +1,32 @@
 
+export type UserProfileType = 'director' | 'legal' | 'staff' | 'dev';
+export type IngestMethod = 'eli' | 'rss' | 'scraper';
+
 export interface LegalUpdate {
   id: string;
+  eliUri?: string;
+  ingestMethod: IngestMethod;
   title: string;
-  description: string;
-  sourceUrl: string;
+  summary: string; // Krótkie streszczenie techniczne
   date: string;
-  impact: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high'; // Ranga techniczna aktu
   category: string;
-  summary: string;
-  checklist?: string[];
+  legalStatus: string;
+  officialRationale: string; // Oficjalne uzasadnienie z dokumentu
+  sourceUrl?: string;
 }
 
 export interface MonitoredSite {
   id: string;
   url: string;
   name: string;
-  lastChecked?: string;
+  isActive: boolean;
+  type: IngestMethod;
+}
+
+export interface SystemConfig {
+  masterSites: MonitoredSite[];
+  strategicTopics: string[];
 }
 
 export interface GroundingLink {

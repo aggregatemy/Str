@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: Strażnik Prawa - Faktograficzny Interfejs Danych
+  description: |
+    API służące do pobierania surowych, znormalizowanych danych o zmianach w prawie RP. 
+    System wyklucza interpretację AI na poziomie backendu.
+  version: 13.0.0
+
+servers:
+  - url: /api/v1
+    description: Lokalny serwer API
+
+paths:
+  /updates:
+    get:
+      summary: Pobierz znormalizowany wykaz faktów prawnych
+      description: Zwraca dane pozyskane przez ELI, RSS i Scraper NFZ.
+      parameters:
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+        - name: method
+          in: query
+          schema:
+            type: string
+            enum: [eli, rss, scraper]
+      responses:
+        '200':
+          description: Sukces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalFact'
+
+  /export/extract:
+    post:
+      summary: Generuj wyciąg dokumentacji
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Surowy wyciąg tekstowy
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  schemas:
+    LegalFact:
+      type: object
+      required: [id, ingestMethod, title, date, legalStatus]
+      properties:
+        id:
+          type: string
+          description: Unikalny identyfikator (np. numer zarządzenia lub ID ELI).
+        ingestMethod:
+          type: string
+          enum: [eli, rss, scraper]
+        eliUri:
+          type: string
+          nullable: true
+        title:
+          type: string
+          description: Oficjalny tytuł dokumentu.
+        summary:
+          type: string
+          description: Faktograficzne streszczenie techniczne (bez opinii).
+        date:
+          type: string
+          format: date
+        impact:
+          type: string
+          enum: [low, medium, high]
+          description: Ranga aktu w hierarchii źródeł prawa.
+        category:
+          type: string
+        legalStatus:
+          type: string
+          description: Status pobrany z deskryptora ELI (np. 'obowiązujący').
+        officialRationale:
+          type: string
+          description: Tekst przepisany bezpośrednio z uzasadnienia aktu.
