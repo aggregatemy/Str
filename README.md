@@ -21,6 +21,7 @@ Aplikacja pobiera dane z oficjalnych źródeł:
 - 📋 **ZUS** - Zakład Ubezpieczeń Społecznych (zus.pl)
 - 📄 **CEZ** - Centrum Elektronicznych Zasobów (cez.gov.pl)
 - 🏥 **NFZ** - Narodowy Fundusz Zdrowia (nfz.gov.pl)
+- 💊 **e-Zdrowie** - Portal Gov.pl Zdrowie (gov.pl/web/zdrowie)
 
 ### Szybka Weryfikacja
 
@@ -51,6 +52,7 @@ Aplikacja automatycznie pobierze i wyświetli:
 - Zarządzenia Prezesa NFZ
 - Ustawy zdrowotne z ISAP
 - Komunikaty ZUS
+- Komunikaty e-Zdrowie (P1/P2)
 - Inne akty medyczne
 
 **Wszystkie dane pochodzą z oficjalnych portali .gov.pl - są w 100% weryfikowalne!**

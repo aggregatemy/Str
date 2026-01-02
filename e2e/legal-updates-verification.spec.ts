@@ -51,12 +51,13 @@ test.describe('Legal Updates Verification - 100% Weryfikowalne', () => {
     await expect(page.getByText(/ZUS/i)).toBeVisible();
     await expect(page.getByText(/CEZ/i)).toBeVisible();
     await expect(page.getByText(/NFZ/i)).toBeVisible();
+    await expect(page.getByText(/e-Zdrowie/i)).toBeVisible();
     
     // Verify source URLs are displayed
     await expect(page.getByText(/isap.sejm.gov.pl/i)).toBeVisible();
     await expect(page.getByText(/zus.pl/i)).toBeVisible();
     
-    console.log('✅ All data sources (ISAP ELI, ZUS, CEZ, NFZ) are configured and displayed');
+    console.log('✅ All data sources (ISAP ELI, ZUS, CEZ, NFZ, e-Zdrowie) are configured and displayed');
   });
 
   test('should show data source types and architecture', async ({ page }) => {
@@ -206,7 +207,8 @@ test.describe('Legal Updates Verification - 100% Weryfikowalne', () => {
     await expect(page.getByText(/ISAP ELI/i)).toBeVisible();
     await expect(page.getByText(/ZUS/i)).toBeVisible();
     await expect(page.getByText(/NFZ/i)).toBeVisible();
-    console.log('✅ 4/6: Źródła danych skonfigurowane (ISAP ELI, ZUS, CEZ, NFZ)');
+    await expect(page.getByText(/e-Zdrowie/i)).toBeVisible();
+    console.log('✅ 4/6: Źródła danych skonfigurowane (ISAP ELI, ZUS, CEZ, NFZ, e-Zdrowie)');
     
     // 5. Verify data source URLs
     await expect(page.getByText(/isap.sejm.gov.pl/i)).toBeVisible();

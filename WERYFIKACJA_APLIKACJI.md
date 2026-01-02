@@ -40,6 +40,13 @@ Aplikacja pobiera dane z następujących oficjalnych źródeł:
 - **Zawartość**: Zarządzenia Prezesa NFZ
 - **Metoda**: Headless Browser / HTTP Parser
 
+### 5. e-Zdrowie (Portal Gov.pl - Zdrowie)
+- **URL**: `https://www.gov.pl/web/zdrowie/rss`
+- **Typ**: RSS Feed
+- **Format**: XML
+- **Zawartość**: Aktualności, komunikaty, ogłoszenia dotyczące e-Zdrowia, P1, P2
+- **Metoda**: Parser RSS
+
 ## 🔍 Jak Zweryfikować Działanie Aplikacji
 
 ### Metoda 1: Automatyczne Testy E2E
@@ -55,7 +62,7 @@ npm run test:e2e -- legal-updates-verification.spec.ts
 - ✅ Załadowanie aplikacji
 - ✅ Dostępność przycisków zakresu czasowego (7/30/90 dni)
 - ✅ Wszystkie zakładki nawigacyjne
-- ✅ Konfiguracja źródeł danych (ISAP, ZUS, CEZ, NFZ)
+- ✅ Konfiguracja źródeł danych (ISAP, ZUS, CEZ, NFZ, e-Zdrowie)
 - ✅ Wyświetlanie URL-i oficjalnych portali
 - ✅ Możliwość przełączenia na widok 30-dniowy (bieżący miesiąc)
 - ✅ Responsywność na różnych rozdzielczościach
@@ -158,6 +165,19 @@ Uzasadnienie: [Treść komunikatu]
 Metoda ingestii: RSS
 ```
 
+### Przykład 4: Komunikat e-Zdrowie
+
+```
+Tytuł: Aktualizacja systemu P1 - nowe funkcjonalności
+Data: 2026-01-10
+Kategoria: Komunikaty e-Zdrowie
+Status: Aktualny
+Uzasadnienie: [Opis aktualizacji systemu P1]
+Źródło: https://www.gov.pl/web/zdrowie/...
+Metoda ingestii: RSS
+```
+```
+
 ## 🔬 Weryfikacja 100% - Punkty Kontrolne
 
 ### ✅ Checkpoint 1: Źródła Danych
@@ -165,6 +185,7 @@ Metoda ingestii: RSS
 - [ ] ZUS RSS jest skonfigurowane
 - [ ] CEZ RSS jest skonfigurowane
 - [ ] NFZ Scraper jest skonfigurowany
+- [ ] e-Zdrowie RSS jest skonfigurowane
 - [ ] Wszystkie URL-e są widoczne w zakładce "Parametry API"
 
 ### ✅ Checkpoint 2: Zakresy Czasowe
@@ -282,6 +303,11 @@ Metoda ingestii: RSS
 │ │ [SCRAPER] NFZ (Backendowy Scraper)  [ON]│ │
 │ │ Endpoint: nfz.gov.pl/zarzadzenia-prezesa│ │
 │ └─────────────────────────────────────────┘ │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ [RSS] e-Zdrowie (Strumień RSS)      [ON]│ │
+│ │ Endpoint: gov.pl/web/zdrowie/rss        │ │
+│ └─────────────────────────────────────────┘ │
 └─────────────────────────────────────────────┘
 ```
 
@@ -315,7 +341,7 @@ Metoda ingestii: RSS
 ### Co zostało udowodnione:
 
 1. **Aplikacja działa** - interfejs jest w pełni funkcjonalny
-2. **Źródła danych są skonfigurowane** - wszystkie 4 oficjalne portale .gov.pl
+2. **Źródła danych są skonfigurowane** - wszystkie 5 oficjalnych portali .gov.pl
 3. **Zakresy czasowe działają** - można wyświetlić akty z 7/30/90 dni
 4. **Możliwość weryfikacji** - testy E2E automatycznie sprawdzają wszystko
 5. **Oficjalne dane** - tylko źródła rządowe (.gov.pl)

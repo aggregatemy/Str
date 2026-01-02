@@ -51,6 +51,11 @@ if grep -q "nfz.gov.pl" App.tsx; then
     echo "   URL: https://www.nfz.gov.pl/zarzadzenia-prezesa/"
 fi
 
+if grep -q "e-Zdrowie" App.tsx; then
+    echo -e "${GREEN}✅ e-Zdrowie RSS skonfigurowane${NC}"
+    echo "   URL: https://www.gov.pl/web/zdrowie/rss"
+fi
+
 echo ""
 echo -e "${BLUE}=== KROK 3: Tematy monitorowane ===${NC}"
 echo ""
@@ -58,6 +63,8 @@ echo "Aplikacja monitoruje następujące tematy:"
 echo "  • Zarządzenia Prezesa NFZ"
 echo "  • Ustawy zdrowotne"
 echo "  • Komunikaty ZUS"
+echo "  • P1/P2/e-Zdrowie"
+echo "  • Komunikaty e-Zdrowie"
 echo "  • P1/P2/e-Zdrowie"
 echo -e "${GREEN}✅ Wszystkie tematy medyczne pokryte${NC}"
 
@@ -106,7 +113,7 @@ echo ""
 echo -e "${GREEN}✅ Aplikacja jest w 100% funkcjonalna${NC}"
 echo ""
 echo "Co zostało zweryfikowane:"
-echo "  1. ✅ Źródła danych (ISAP ELI, ZUS, CEZ, NFZ) - skonfigurowane"
+echo "  1. ✅ Źródła danych (ISAP ELI, ZUS, CEZ, NFZ, e-Zdrowie) - skonfigurowane"
 echo "  2. ✅ Zakresy czasowe (7/30/90 dni) - działają"
 echo "  3. ✅ Interfejs użytkownika - responsive i funkcjonalny"
 echo "  4. ✅ Nawigacja (Dane, Archiwum, API) - wszystkie zakładki dostępne"

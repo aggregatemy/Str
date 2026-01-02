@@ -9,13 +9,15 @@ const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
     { id: '1', name: 'ISAP ELI (System API)', url: 'https://isap.sejm.gov.pl/api/eli', isActive: true, type: 'eli' },
     { id: '2', name: 'ZUS (Strumień RSS)', url: 'https://www.zus.pl/rss', isActive: true, type: 'rss' },
     { id: '3', name: 'CEZ (Strumień RSS)', url: 'https://cez.gov.pl/rss', isActive: true, type: 'rss' },
-    { id: '4', name: 'NFZ (Backendowy Scraper)', url: 'https://www.nfz.gov.pl/zarzadzenia-prezesa/', isActive: true, type: 'scraper' }
+    { id: '4', name: 'NFZ (Backendowy Scraper)', url: 'https://www.nfz.gov.pl/zarzadzenia-prezesa/', isActive: true, type: 'scraper' },
+    { id: '5', name: 'e-Zdrowie (Strumień RSS)', url: 'https://www.gov.pl/web/zdrowie/rss', isActive: true, type: 'rss' }
   ],
   strategicTopics: [
     "Zarządzenia Prezesa NFZ",
     "Ustawy zdrowotne",
     "Komunikaty ZUS",
-    "P1/P2/e-Zdrowie"
+    "P1/P2/e-Zdrowie",
+    "Komunikaty e-Zdrowie"
   ]
 };
 
