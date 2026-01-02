@@ -1,65 +1,87 @@
-import { describe, it, expect } from 'vitest';
-import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5554/api/v1';
+import { describe, it, expect, vi } from 'vitest';
+import request from 'supertest';
+
+// Mock workerManager BEFORE importing app
+vi.mock('../src/services/workerManager.js', () => ({
+  workerManager: {
+    getDetailedStatus: vi.fn().mockReturnValue({ 
+      overall: 'healthy', 
+      timestamp: new Date().toISOString(),
+      workers: { eli: {}, rss: {}, nfz: {} }
+    }),
+    startAll: vi.fn(),
+    stopAll: vi.fn()
+  }
+}));
+
+// Mock dataService to avoid loading scrapers and rdflib
+vi.mock('../src/services/dataService.js', () => ({
+  getData: vi.fn().mockResolvedValue([]),
+  getExport: vi.fn().mockResolvedValue('Mock Export')
+}));
+
+import { app } from '../src/app';
+
+const API_PREFIX = '/api/v1';
 
 describe('Backend API - Testy jednostkowe', () => {
   describe('GET /health', () => {
     it('powinien zwrócić status OK', async () => {
-      const response = await axios.get(`${BASE_URL}/health`);
+      const response = await request(app).get(`${API_PREFIX}/health`);
       expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('status', 'ok');
-      expect(response.data).toHaveProperty('timestamp');
+      expect(response.body).toHaveProperty('status', 'ok');
+      expect(response.body).toHaveProperty('timestamp');
     });
   });
 
   describe('GET /updates', () => {
-    it('powinien zwrócić pustą tablicę gdy brak danych', async () => {
-      const response = await axios.get(`${BASE_URL}/updates`);
+    it('powinien zwrócić pustą tablicę gdy brak danych (lub tablicę)', async () => {
+      const response = await request(app).get(`${API_PREFIX}/updates`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr range=7d', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?range=7d`);
+      const response = await request(app).get(`${API_PREFIX}/updates?range=7d`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr range=30d', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?range=30d`);
+      const response = await request(app).get(`${API_PREFIX}/updates?range=30d`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr range=90d', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?range=90d`);
+      const response = await request(app).get(`${API_PREFIX}/updates?range=90d`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr method=eli', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?method=eli`);
+      const response = await request(app).get(`${API_PREFIX}/updates?method=eli`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr method=rss', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?method=rss`);
+      const response = await request(app).get(`${API_PREFIX}/updates?method=rss`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zaakceptować parametr method=scraper', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?method=scraper`);
+      const response = await request(app).get(`${API_PREFIX}/updates?method=scraper`);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.data)).toBe(true);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('powinien zwrócić dane z poprawnymi polami', async () => {
-      const response = await axios.get(`${BASE_URL}/updates?range=30d`);
-      if (response.data.length > 0) {
-        const item = response.data[0];
+      const response = await request(app).get(`${API_PREFIX}/updates?range=30d`);
+      if (response.body.length > 0) {
+        const item = response.body[0];
         expect(item).toHaveProperty('id');
         expect(item).toHaveProperty('title');
         expect(item).toHaveProperty('date');
@@ -70,23 +92,20 @@ describe('Backend API - Testy jednostkowe', () => {
 
   describe('POST /export/extract', () => {
     it('powinien zwrócić 400 gdy brak ids', async () => {
-      try {
-        await axios.post(`${BASE_URL}/export/extract`, {});
-      } catch (error: any) {
-        expect(error.response.status).toBe(400);
-      }
+        const response = await request(app).post(`${API_PREFIX}/export/extract`).send({});
+        expect(response.status).toBe(400);
     });
 
     it('powinien zaakceptować pustą tablicę ids', async () => {
-      const response = await axios.post(`${BASE_URL}/export/extract`, {
+      const response = await request(app).post(`${API_PREFIX}/export/extract`).send({
         ids: []
       });
       expect(response.status).toBe(200);
-      expect(typeof response.data).toBe('string');
+      expect(typeof response.text).toBe('string');
     });
 
     it('powinien zwrócić text/plain content-type', async () => {
-      const response = await axios.post(`${BASE_URL}/export/extract`, {
+      const response = await request(app).post(`${API_PREFIX}/export/extract`).send({
         ids: []
       });
       expect(response.headers['content-type']).toContain('text/plain');
@@ -94,8 +113,8 @@ describe('Backend API - Testy jednostkowe', () => {
   });
 
   describe('Swagger Documentation', () => {
-    it('powinien serwować Swagger UI pod /api/docs', async () => {
-      const response = await axios.get('http://localhost:5554/api/docs');
+    it('powinien serwować Swagger UI pod /api/docs/', async () => {
+      const response = await request(app).get('/api/docs/');
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/html');
     });
@@ -103,7 +122,7 @@ describe('Backend API - Testy jednostkowe', () => {
 
   describe('CORS', () => {
     it('powinien mieć włączony CORS', async () => {
-      const response = await axios.get(`${BASE_URL}/health`);
+      const response = await request(app).get(`${API_PREFIX}/health`);
       expect(response.headers).toHaveProperty('access-control-allow-origin');
     });
   });

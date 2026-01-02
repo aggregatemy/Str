@@ -48,8 +48,8 @@ describe('UpdateCard Component', () => {
   it('renderuje wiele dokumentów', () => {
     const updates = [mockUpdate, { ...mockUpdate, id: 'test-id-2', title: 'Drugi dokument' }];
     render(<UpdateCard updates={updates} loading={false} />);
-    expect(screen.getByText('Rozporządzenie testowe')).toBeTruthy();
-    expect(screen.getByText('Drugi dokument')).toBeTruthy();
+    expect(screen.getByText(/Rozporządzenie testowe/i)).toBeTruthy();
+    expect(screen.getByText(/Drugi dokument/i)).toBeTruthy();
   });
 
   it('wywołuje onToggleSelection po kliknięciu', () => {
@@ -67,14 +67,20 @@ describe('UpdateCard Component', () => {
     // Znajdź checkbox i kliknij
     const checkbox = document.querySelector('input[type="checkbox"]');
     expect(checkbox).toBeTruthy();
-    checkbox?.click();
+    (checkbox as HTMLElement).click();
     expect(onToggleMock).toHaveBeenCalled();
+  });
+
+  it('wywołuje onSave po kliknięciu archiwizuj', () => {
+    const onSaveMock = vi.fn();
+    render(<UpdateCard updates={[mockUpdate]} loading={false} onSave={onSaveMock} />);
+    const button = screen.getByText(/Archiwizuj dokument/i);
+    button.click();
+    expect(onSaveMock).toHaveBeenCalledWith(mockUpdate);
   });
 
   it('wyświetla sourceUrl gdy dostępny', () => {
     render(<UpdateCard updates={[mockUpdate]} loading={false} />);
-    // sourceUrl nie jest wyświetlany bezpośrednio w UI, tylko używany wewnętrznie
-    // Sprawdzamy czy komponent się wyrenderował bez błędów
-    expect(screen.getByText('Rozporządzenie testowe')).toBeTruthy();
+    expect(screen.getByText(/Rozporządzenie testowe/i)).toBeTruthy();
   });
 });
