@@ -1,20 +1,43 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Strażnik Prawa - System Monitoringu Legislacji
 
-# Run and deploy your AI Studio app
+System do automatycznego monitorowania i agregacji zmian w polskim prawodawstwie.
 
-This contains everything you need to run your app locally.
+## Architektura
 
-View your app in AI Studio: https://ai.studio/apps/drive/1OWR-Jl8KYj7mr40To6jSOF_gavuc_Y7E
+- **Backend**: Node.js + Express + Web Scraping
+- **Frontend**: React + TypeScript + Vite
+- **Źródła danych**: ELI API, RSS feeds (ZUS), NFZ web scraping
 
-## Run Locally
+## Uruchomienie
 
-**Prerequisites:**  Node.js
+### Backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+Backend uruchomi się na `http://localhost:3001`
 
+### Frontend
+```bash
+npm install
+npm run dev
+```
+Frontend uruchomi się na `http://localhost:5173`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Źródła danych
+
+1. **ELI API** - Internetowy System Aktów Prawnych (ISAP)
+2. **RSS ZUS** - Akty prawne Zakładu Ubezpieczeń Społecznych
+3. **NFZ Scraper** - Zarządzenia Prezesa NFZ
+
+## API Endpoints
+
+- `GET /api/v1/updates?range=7d&method=eli` - Lista aktów prawnych
+- `POST /api/v1/export/extract` - Eksport wybranych dokumentów
+- `GET /api/v1/health` - Status serwera
+
+## Licencja
+
+MIT
+

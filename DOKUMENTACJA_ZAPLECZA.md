@@ -10,17 +10,17 @@ System działa w modelu "Zero AI Assessment". Architektura backendu składa się
 - **Moduł SCRAPER (NFZ)**: Mechanizm typu "Headless Browser" lub "HTTP Client" parsujący strukturę tabelaryczną strony `nfz.gov.pl/zarzadzenia-prezesa/`. Wyciąga surowy tekst z komórek tabeli.
 
 ### B. Warstwa Normalizacji (Normalization Layer)
-W tej warstwie Gemini 3 Pro pełni rolę **mechanicznego parsera**. 
+W tej warstwie dane są przetwarzane bez użycia AI - bezpośrednie mapowanie pól na strukturę JSON `LegalUpdate`.
 - **Wejście**: Surowy kod HTML tabeli NFZ lub XML z RSS.
 - **Zadanie**: Mapowanie pól na strukturę JSON `LegalUpdate`.
-- **Restrykcja**: Kategoryczny zakaz generowania tekstu niewystępującego w źródle.
+- **Restrykcja**: Brak interpretacji, tylko faktograficzne dane ze źródeł.
 
 ### C. Warstwa API (Service Layer)
 Udostępnia endpointy dla Frontendu zgodnie ze specyfikacją OpenAPI.
 
 ## 2. Implementacja Mechanizmu NFZ (Scraper)
 
-Backend musi implementować cykliczny proces (Cron Job):
+Backend implementuje cykliczny proces (Cron Job):
 1. Odpytanie URL NFZ.
 2. Pobranie fragmentu DOM zawierającego tabelę zarządzeń.
 3. Przekazanie fragmentu do Warstwy Normalizacji.
@@ -28,7 +28,7 @@ Backend musi implementować cykliczny proces (Cron Job):
 
 ## 3. Szczegóły API dla Frontendu
 
-Backend musi wystawiać następujące zasoby:
+Backend wystawia następujące zasoby:
 
 ### `GET /updates`
 Zwraca listę znormalizowanych faktów prawnych. 
@@ -39,4 +39,14 @@ Zwraca listę znormalizowanych faktów prawnych.
 Generuje czysty wyciąg tekstowy z wybranych rekordów. Nie jest to analiza, a jedynie agregacja pól `officialRationale` i `title`.
 
 ## 4. Bezpieczeństwo i Autentyczność
-Każdy rekord musi zawierać `sourceUrl`. Frontend weryfikuje domenę linku (whitelist: `*.gov.pl`, `*.zus.pl`).
+Każdy rekord zawiera `sourceUrl`. Frontend weryfikuje domenę linku (whitelist: `*.gov.pl`, `*.zus.pl`).
+
+## 5. Implementacja (Status: ✅ DONE)
+
+System został zaimplementowany zgodnie z architekturą "Zero AI":
+- ✅ Scraper ELI (REST API)
+- ✅ Scraper RSS (ZUS)
+- ✅ Scraper NFZ (Cheerio HTML parsing)
+- ✅ Scheduler (node-cron, co 6h)
+- ✅ REST API zgodne z OpenAPI spec
+- ✅ Brak jakiejkolwiek interpretacji AI

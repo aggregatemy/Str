@@ -29,11 +29,6 @@ export interface SystemConfig {
   strategicTopics: string[];
 }
 
-export interface GroundingLink {
-  uri: string;
-  title: string;
-}
-
 export interface DashboardStats {
   total: number;
   highImpact: number;

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MonitoredSite, GroundingLink, LegalUpdate, DashboardStats, UserProfileType, SystemConfig } from './types';
-import { fetchSystemUpdates, generateEmailBriefing } from './services/geminiService';
+import { MonitoredSite, LegalUpdate, DashboardStats, UserProfileType, SystemConfig } from './types';
+import { fetchLegalUpdates, exportUpdates } from './services/apiService';
 import UpdateCard from './components/UpdateCard';
 
 const KONFIGURACJA_DYNAMICZNA: SystemConfig = {
@@ -34,7 +34,6 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
   
-  const [odnosniki, setOdnosniki] = useState<GroundingLink[]>([]);
   const [laduje, setLaduje] = useState(false);
   const [blad, setBlad] = useState<string | null>(null);
   const [widok, setWidok] = useState<'glowny' | 'archiwum' | 'zrodla'>('glowny');
@@ -50,12 +49,9 @@ const App: React.FC = () => {
   const pobierzDane = async () => {
     setLaduje(true); setBlad(null);
     try {
-      const aktywneZrodla = config.masterSites.filter(s => s.isActive).map(s => ({ url: s.url, type: s.type }));
-      // 'legal' profil jest stały, bo AI nie personalizuje już treści
-      const wynik = await fetchSystemUpdates(aktywneZrodla, config.strategicTopics, 'legal', zakres);
-      setZmiany(wynik.updates);
-      setOdnosniki(wynik.links);
-      setZaznaczone(wynik.updates.map(u => u.id));
+      const wynik = await fetchLegalUpdates(zakres);
+      setZmiany(wynik);
+      setZaznaczone(wynik.map(u => u.id));
     } catch (err: any) {
       setBlad("Błąd systemu ingestii. Sprawdź dostępność API ELI, RSS lub mechanizmu Scrapingowego.");
     } finally { setLaduje(false); }
@@ -132,7 +128,6 @@ const App: React.FC = () => {
         ) : (
           <UpdateCard 
             updates={filtrowaneZmiany} 
-            links={odnosniki} 
             loading={laduje} 
             onSave={(u) => setZapisane(prev => prev.find(x => x.id === u.id) ? prev.filter(x => x.id !== u.id) : [...prev, u])}
             isSaved={(id) => !!zapisane.find(u => u.id === id)}
@@ -149,7 +144,7 @@ const App: React.FC = () => {
               const wybrane = zmiany.filter(u => zaznaczone.includes(u.id));
               setRaportOtwarty(true);
               setGenerujeRaport(true);
-              generateEmailBriefing(wybrane).then(setTrescRaportu).finally(() => setGenerujeRaport(false));
+              exportUpdates(zaznaczone).then(setTrescRaportu).finally(() => setGenerujeRaport(false));
             }}
             className="px-10 py-5 bg-slate-900 text-white font-black text-[10px] uppercase shadow-2xl hover:bg-black transition-all flex items-center gap-5"
           >

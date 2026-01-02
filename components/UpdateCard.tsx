@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { LegalUpdate, GroundingLink } from '../types';
+import { LegalUpdate } from '../types';
 
 interface UpdateCardProps {
   updates: LegalUpdate[];
-  links: GroundingLink[];
   loading: boolean;
   onSave?: (update: LegalUpdate) => void;
   isSaved?: (id: string) => boolean;
@@ -90,7 +89,7 @@ const SingleUpdate: React.FC<{
   );
 };
 
-const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave, isSaved, selectedIds = [], onToggleSelection }) => {
+const UpdateCard: React.FC<UpdateCardProps> = ({ updates, loading, onSave, isSaved, selectedIds = [], onToggleSelection }) => {
   if (loading) {
     return (
       <div className="space-y-6">
@@ -119,31 +118,6 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ updates, links, loading, onSave
           ))
         )}
       </div>
-
-      {links.length > 0 && (
-        <div className="bg-slate-900 p-8 rounded shadow-xl">
-          <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.4em] mb-6 flex items-center gap-4">
-            <i className="fas fa-database text-amber-600"></i> Zweryfikowane Punkty Danych
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {links.map((link, idx) => (
-              <a 
-                key={idx} 
-                href={link.uri} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="p-4 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 transition-colors flex items-center justify-between group"
-              >
-                <div className="flex flex-col truncate pr-4">
-                   <span className="text-[9px] font-black text-slate-200 truncate uppercase">{link.title}</span>
-                   <span className="text-[8px] text-slate-500 font-mono truncate">{link.uri}</span>
-                </div>
-                <i className="fas fa-arrow-up-right-from-square text-slate-600 group-hover:text-amber-500"></i>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
