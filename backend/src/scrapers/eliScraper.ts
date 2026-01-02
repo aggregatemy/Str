@@ -1,44 +1,57 @@
-import axios from 'axios';
 import { LegalFact } from '../types/index.js';
+import { getSourcesByPriority, ELISource } from '../config/eliSources.js';
+import { ELIClient } from './eli/eliClient.js';
 
-export async function scrapeELI(): Promise<LegalFact[]> {
-  try {
-    const response = await axios.get('https://isap.sejm.gov.pl/api/eli', {
-      params: { limit: 50 },
-      timeout: 10000
+/**
+ * Główny scraper ELI - agreguje dane ze wszystkich źródeł
+ */
+export async function scrapeAllELI(): Promise<LegalFact[]> {
+  const sources = getSourcesByPriority();
+  const allFacts: LegalFact[] = [];
+  
+  console.log(`🇪🇺 Uruchamianie scraperów ELI dla ${sources.length} źródeł...`);
+
+  // Pobieraj równolegle (max 3 jednocześnie, żeby nie przeciążyć)
+  for (let i = 0; i < sources.length; i += 3) {
+    const batch = sources.slice(i, i + 3);
+    
+    const results = await Promise.allSettled(
+      batch.map(source => scrapeELISource(source))
+    );
+
+    results.forEach((result, idx) => {
+      if (result.status === 'fulfilled') {
+        allFacts.push(...result.value);
+      } else {
+        console.error(`❌ Błąd ELI (${batch[idx].name}):`, result.reason);
+      }
     });
-
-    const results: LegalFact[] = [];
-    const items = response.data?.items || [];
-
-    for (const item of items) {
-      results.push({
-        id: item.eliUri || `eli-${Date.now()}`,
-        ingestMethod: 'eli',
-        eliUri: item.eliUri,
-        title: item.title || 'Brak tytułu',
-        summary: item.abstract || 'Brak streszczenia',
-        date: item.publicationDate || new Date().toISOString().split('T')[0],
-        impact: determineImpact(item.type),
-        category: item.type || 'Inne',
-        legalStatus: item.status || 'unknown',
-        officialRationale: item.justification || '',
-        sourceUrl: `https://isap.sejm.gov.pl${item.eliUri}`
-      });
-    }
-
-    return results;
-  } catch (error) {
-    console.error('❌ ELI Scraper Error:', error);
-    return [];
   }
+
+  console.log(`✅ ELI: Pobrano łącznie ${allFacts.length} dokumentów`);
+  return allFacts;
 }
 
-function determineImpact(type: string): 'low' | 'medium' | 'high' {
-  const highTypes = ['ustawa', 'konstytucja'];
-  const mediumTypes = ['rozporządzenie'];
+/**
+ * Pobierz dane z pojedynczego źródła ELI
+ */
+async function scrapeELISource(source: ELISource): Promise<LegalFact[]> {
+  const client = new ELIClient(source);
+  return await client.fetchRecentDocuments(30); // Ostatnie 30 dni
+}
+
+/**
+ * Backward compatibility - stary scraper dla Sejmu
+ */
+export async function scrapeELI(): Promise<LegalFact[]> {
+  // Pobierz tylko ze źródła "sejm"
+  const sources = getSourcesByPriority();
+  const sejmSource = sources.find(s => s.id === 'sejm');
   
-  if (highTypes.some(t => type?.toLowerCase().includes(t))) return 'high';
-  if (mediumTypes.some(t => type?.toLowerCase().includes(t))) return 'medium';
-  return 'low';
+  if (!sejmSource) {
+    console.warn('⚠️ Źródło ELI Sejmu nie znalezione');
+    return [];
+  }
+
+  return scrapeELISource(sejmSource);
 }

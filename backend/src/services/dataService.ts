@@ -1,5 +1,5 @@
 import { LegalFact } from '../types/index.js';
-import { scrapeELI } from '../scrapers/eliScraper.js';
+import { scrapeAllELI } from '../scrapers/eliScraper.js';
 import { scrapeRSS } from '../scrapers/rssScraper.js';
 import { scrapeNFZ } from '../scrapers/nfzScraper.js';
 
@@ -7,18 +7,24 @@ let cachedData: LegalFact[] = [];
 let lastUpdate: Date | null = null;
 
 export async function refreshData(): Promise<void> {
-  console.log('🔄 Odświeżanie danych...');
+  console.log('🔄 Odświeżanie danych z wszystkich źródeł...');
+  const startTime = Date.now();
   
-  const [eli, zusRss, nfz] = await Promise.all([
-    scrapeELI(),
+  const [eli, zusRss, nfz] = await Promise.allSettled([
+    scrapeAllELI(),      // ZMIANA: teraz pobiera ze WSZYSTKICH źródeł ELI
     scrapeRSS('https://www.zus.pl/rss/akty-prawne', 'zus'),
     scrapeNFZ()
   ]);
 
-  cachedData = [...eli, ...zusRss, ...nfz];
+  const eliData = eli.status === 'fulfilled' ? eli.value : [];
+  const zusData = zusRss.status === 'fulfilled' ? zusRss.value : [];
+  const nfzData = nfz.status === 'fulfilled' ? nfz.value : [];
+
+  cachedData = [...eliData, ...zusData, ...nfzData];
   lastUpdate = new Date();
   
-  console.log(`✅ Pobrano ${cachedData.length} rekordów`);
+  const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`✅ Pobrano ${cachedData.length} rekordów w ${duration}s`);
 }
 
 export function getData(range?: string, method?: string): LegalFact[] {
