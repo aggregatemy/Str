@@ -9,7 +9,7 @@ const router = Router();
  * POST /api/v1/export/extract
  * Generate plain text extract from selected legal updates
  */
-router.post('/export/extract', async (req: Request, res: Response) => {
+router.post('/extract', async (req: Request, res: Response) => {
   try {
     const { ids } = req.body;
 

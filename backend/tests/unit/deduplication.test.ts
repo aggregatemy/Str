@@ -5,8 +5,8 @@ describe('DeduplicationService', () => {
   let service: DeduplicationService;
 
   beforeEach(() => {
-    // Use in-memory database for tests
-    process.env.DATABASE_PATH = ':memory:';
+    // Use in-memory database for tests with unique name per test
+    process.env.DATABASE_PATH = `:memory:`;
     service = new DeduplicationService();
   });
 
@@ -42,7 +42,7 @@ describe('DeduplicationService', () => {
       
       // Save one document
       await storage.saveLegalUpdate({
-        id: 'nfz-100',
+        id: 'nfz-200',
         ingestMethod: 'scraper',
         title: 'Existing Document',
         summary: 'Summary',
@@ -54,23 +54,23 @@ describe('DeduplicationService', () => {
       });
 
       const documents = [
-        { Id: 100, Title: 'Existing' },
-        { Id: 101, Title: 'New' },
-        { Id: 102, Title: 'Also New' }
+        { Id: 200, Title: 'Existing' },
+        { Id: 201, Title: 'New' },
+        { Id: 202, Title: 'Also New' }
       ];
 
       const newDocs = await service.filterNew(documents);
 
       expect(newDocs).toHaveLength(2);
-      expect(newDocs[0].Id).toBe(101);
-      expect(newDocs[1].Id).toBe(102);
+      expect(newDocs[0].Id).toBe(201);
+      expect(newDocs[1].Id).toBe(202);
     });
 
     it('should handle documents with different ID formats', async () => {
       const documents = [
-        { Id: 100 },
-        { id: 'eli-123' },
-        { guid: 'rss-456' }
+        { Id: 300 },
+        { id: 'eli-456' },
+        { guid: 'rss-789' }
       ];
 
       const newDocs = await service.filterNew(documents);
@@ -79,9 +79,9 @@ describe('DeduplicationService', () => {
 
     it('should return all documents when none exist', async () => {
       const documents = [
-        { Id: 100 },
-        { Id: 101 },
-        { Id: 102 }
+        { Id: 400 },
+        { Id: 401 },
+        { Id: 402 }
       ];
 
       const newDocs = await service.filterNew(documents);
