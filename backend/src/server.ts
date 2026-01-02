@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { app } from './app';
 import { startHourlySyncJob } from './jobs/hourly-sync';
+import { startDailyEmailJob } from './jobs/daily-email';
 import { logger } from './utils/logger';
 import { getDatabase, closeDatabase } from './db/client';
 
@@ -27,6 +28,7 @@ const server = app.listen(PORT, () => {
   
   // Start cron jobs
   startHourlySyncJob();
+  startDailyEmailJob();
 });
 
 // Graceful shutdown

@@ -10,6 +10,7 @@ Backend Node.js/TypeScript dla systemu monitoringu zmian w prawie medycznym RP.
 - 🔄 **Normalizacja danych** (bez interpretacji AI) - mapowanie 1:1
 - 💾 **SQLite database** - przechowywanie znormalizowanych danych
 - 🔌 **REST API** zgodne z OpenAPI 3.1
+- 📧 **Codzienne raporty email** - automatyczne powiadomienia o zmianach
 - ✅ **Testy jednostkowe i integracyjne**
 - 📝 **Szczegółowa dokumentacja**
 
@@ -67,6 +68,18 @@ DATABASE_PATH=./data/straznik.db
 ENABLE_CRON=true
 CRON_SCHEDULE=0 * * * *
 
+# Email Reports
+ENABLE_EMAIL_REPORTS=true
+EMAIL_CRON_SCHEDULE=0 8 * * *
+EMAIL_RECIPIENTS=slawomir@lopuszanski.eu,slopuszanski@gabos.pl
+
+# SMTP Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
 # Logging
 LOG_LEVEL=info
 LOG_FILE=./logs/backend.log
@@ -77,12 +90,52 @@ CORS_ORIGIN=http://localhost:5173
 
 ### Harmonogram Cron
 
-Domyślnie: `0 * * * *` (co godzinę, o pełnej godzinie)
+**Synchronizacja danych**: `0 * * * *` (co godzinę, o pełnej godzinie)
+
+**Raporty email**: `0 8 * * *` (codziennie o 8:00 rano)
 
 Inne przykłady:
 - `*/30 * * * *` - co 30 minut
 - `0 */2 * * *` - co 2 godziny
 - `0 9 * * *` - codziennie o 9:00
+
+### Konfiguracja Email
+
+#### Gmail
+
+1. Włącz 2-Step Verification w koncie Google
+2. Wygeneruj App Password: https://myaccount.google.com/apppasswords
+3. Użyj App Password jako `SMTP_PASS`
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-16-char-app-password
+```
+
+#### Inne dostawcy SMTP
+
+**Outlook/Office365**:
+```env
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+```
+
+**SendGrid**:
+```env
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=your-sendgrid-api-key
+```
+
+**Mailgun**:
+```env
+SMTP_HOST=smtp.mailgun.org
+SMTP_PORT=587
+```
 
 ## API Endpoints
 
@@ -169,12 +222,14 @@ src/
 ├── services/         # Logika biznesowa
 │   ├── normalization.ts  # Normalizacja danych (bez AI)
 │   ├── storage.ts        # SQLite storage
-│   └── deduplication.ts  # Wykrywanie duplikatów
+│   ├── deduplication.ts  # Wykrywanie duplikatów
+│   └── email.ts          # Email service (nodemailer)
 ├── routes/           # Express routes
 │   ├── updates.ts        # GET /api/v1/updates
 │   └── export.ts         # POST /api/v1/export/extract
 ├── jobs/             # Cron jobs
-│   └── hourly-sync.ts    # Synchronizacja co godzinę
+│   ├── hourly-sync.ts    # Synchronizacja co godzinę
+│   └── daily-email.ts    # Raport email co rano
 ├── db/               # Database
 │   ├── client.ts         # Database client
 │   ├── schema.ts         # Schema definitions
@@ -217,13 +272,20 @@ System **NIE UŻYWA AI** do oceny ani interpretacji. Normalizacja polega na:
 
 ### Proces Synchronizacji
 
-Co godzinę (domyślnie):
+**Co godzinę** (domyślnie):
 
 1. **Fetch** - Pobierz nowe dokumenty ze źródeł
 2. **Deduplicate** - Odfiltruj duplikaty po ID
 3. **Normalize** - Mapuj na format `LegalUpdate`
 4. **Store** - Zapisz do SQLite
 5. **Attachments** - Pobierz i zapisz załączniki (NFZ)
+
+**Codziennie rano** (domyślnie 8:00):
+
+1. **Query** - Pobierz zmiany z ostatnich 24h
+2. **Format** - Wygeneruj raport HTML i text
+3. **Send** - Wyślij email do odbiorców
+4. **Log** - Zaloguj status wysyłki
 
 ## Baza Danych
 
@@ -365,14 +427,26 @@ A: Nie! System nie używa AI. Gemini został usunięty z normalizacji.
 **Q: Jak często synchronizuje się z NFZ?**  
 A: Co godzinę (domyślnie). Konfigurowane przez `CRON_SCHEDULE`.
 
+**Q: Kiedy wysyłane są raporty email?**  
+A: Codziennie rano o 8:00 (domyślnie). Konfigurowane przez `EMAIL_CRON_SCHEDULE`.
+
+**Q: Do kogo wysyłane są raporty?**  
+A: Do adresów w `EMAIL_RECIPIENTS` (domyślnie: slawomir@lopuszanski.eu, slopuszanski@gabos.pl).
+
+**Q: Czy można wyłączyć raporty email?**  
+A: Tak, ustaw `ENABLE_EMAIL_REPORTS=false` w `.env`.
+
 **Q: Czy można uruchomić wiele instancji?**  
-A: Tak, ale tylko jedna powinna mieć `ENABLE_CRON=true` aby uniknąć duplikatów.
+A: Tak, ale tylko jedna powinna mieć `ENABLE_CRON=true` i `ENABLE_EMAIL_REPORTS=true` aby uniknąć duplikatów.
 
 **Q: Czy backend wspiera HTTPS?**  
 A: Backend serwuje HTTP. Użyj reverse proxy (nginx) dla SSL/TLS.
 
 **Q: Jak duża może być baza SQLite?**  
 A: Teoretycznie do 281 TB. W praktyce sprawdzona do 1 TB.
+
+**Q: Jaki dostawca email jest zalecany?**  
+A: Gmail z App Password, SendGrid, lub Mailgun. Unikaj bezpośredniego SMTP na serwerach produkcyjnych.
 
 ## Support
 

@@ -99,8 +99,6 @@ System działa w modelu "Zero AI Assessment" - **Gemini nie dokonuje oceny ani i
 #### Normalization Service (`src/services/normalization.ts`)
 
 **Zadanie**: Przekształcenie surowych danych na ujednolicony format `LegalUpdate`.
-
-**Metody**:
 - `normalizeNFZData()` - NFZ → LegalUpdate
 - `normalizeELIData()` - ELI → LegalUpdate
 - `normalizeRSSData()` - RSS → LegalUpdate
@@ -161,7 +159,30 @@ RYGORYSTYCZNE ZASADY:
 - `exists(id)` - sprawdzenie czy dokument istnieje
 - `filterNew(documents)` - filtrowanie nowych dokumentów
 
-### 3. Cron Jobs (`src/jobs/hourly-sync.ts`)
+#### Email Service (`src/services/email.ts`)
+
+**Zadanie**: Wysyłanie raportów email z powiadomieniami o zmianach.
+
+**Konfiguracja**:
+- Nodemailer jako SMTP client
+- Obsługa wielu dostawców (Gmail, SendGrid, Mailgun, etc.)
+- HTML + plain text format
+
+**Metody**:
+- `sendDailyReport(updates, recipients)` - wysyłka dziennego raportu
+- `testConnection()` - test połączenia SMTP
+- `generateReportHTML(updates)` - generowanie HTML
+- `generateReportText(updates)` - generowanie plain text
+
+**Format raportu**:
+- Podsumowanie statystyk (liczba zmian, źródła, priorytety)
+- Grupowanie po priorytecie (wysoki/średni/niski)
+- Szczegóły każdej zmiany (tytuł, data, kategoria, uzasadnienie)
+- Linki do źródeł
+
+### 3. Cron Jobs
+
+#### Hourly Sync (`src/jobs/hourly-sync.ts`)
 
 **Harmonogram**: Co godzinę (domyślnie `0 * * * *`)
 
@@ -179,6 +200,29 @@ RYGORYSTYCZNE ZASADY:
 5. Save to database
 6. Download attachments (NFZ only)
 ```
+
+#### Daily Email Report (`src/jobs/daily-email.ts`)
+
+**Harmonogram**: Codziennie rano (domyślnie `0 8 * * *` - 8:00 AM)
+
+**Proces**:
+1. **Query** - Pobierz aktualizacje z ostatnich 24h z bazy
+2. **Filter** - Filtruj po dacie (ostatnie 24h)
+3. **Format** - Wygeneruj raport HTML i plain text
+4. **Send** - Wyślij email do skonfigurowanych odbiorców
+5. **Log** - Zaloguj status wysyłki
+
+**Odbiorcy** (z .env):
+```
+EMAIL_RECIPIENTS=slawomir@lopuszanski.eu,slopuszanski@gabos.pl
+```
+
+**Format raportu**:
+- Nagłówek z datą i liczbą zmian
+- Podsumowanie statystyk (źródła, priorytety)
+- Zmiany pogrupowane po priorytecie (wysoki → średni → niski)
+- Szczegóły każdej zmiany (tytuł, streszczenie, uzasadnienie, link)
+- Footer z informacjami o systemie
 
 ### 4. API Layer (`src/routes/`)
 
@@ -368,7 +412,7 @@ npm run test:coverage # Z pokryciem
 
 ### Production
 - express, axios, better-sqlite3
-- @google/genai, node-cron, winston
+- node-cron, winston, nodemailer
 - cors, helmet, dotenv
 - axios-cache-interceptor, xml2js
 
