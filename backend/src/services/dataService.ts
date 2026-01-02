@@ -55,8 +55,11 @@ export async function refreshData(): Promise<void> {
   
   for (const fact of allData) {
     try {
+      // compositeKey jest teraz PK - używaj do upsert
+      const compositeKey = `${fact.eliUri}:${fact.id}:${fact.date}`;
+      
       await prisma.legalFact.upsert({
-        where: { id: fact.id },
+        where: { compositeKey },
         update: {
           title: fact.title,
           summary: fact.summary,
@@ -64,7 +67,7 @@ export async function refreshData(): Promise<void> {
           officialRationale: fact.officialRationale,
         },
         create: {
-          id: fact.id,
+          compositeKey,
           ingestMethod: fact.ingestMethod,
           eliUri: fact.eliUri,
           title: fact.title,

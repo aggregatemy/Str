@@ -1,8 +1,25 @@
-import { LegalUpdate } from '../types';
+import { LegalUpdate, IngestMethod } from '../types';
 
 // Backend działa na porcie 5554 (izolacja środowiska)
 const API_BASE = '/api/v1';
 const TIMEOUT_MS = 15000; // 15 sekund
+
+// Type guard to validate LegalUpdate structure
+function isValidLegalUpdate(item: unknown): item is LegalUpdate {
+  if (typeof item !== 'object' || item === null) return false;
+  
+  const obj = item as Record<string, unknown>;
+  
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.title === 'string' &&
+    typeof obj.summary === 'string' &&
+    typeof obj.date === 'string' &&
+    typeof obj.ingestMethod === 'string' &&
+    typeof obj.category === 'string' &&
+    typeof obj.legalStatus === 'string'
+  );
+}
 
 function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = TIMEOUT_MS): Promise<Response> {
   return Promise.race([
@@ -11,6 +28,14 @@ function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = TIME
       setTimeout(() => reject(new Error('Timeout: Serwer nie odpowiedział w określonym czasie')), timeout)
     )
   ]);
+}
+
+function mapToLegalUpdate(item: unknown): LegalUpdate | null {
+  if (!isValidLegalUpdate(item)) {
+    console.warn('Invalid LegalUpdate structure:', item);
+    return null;
+  }
+  return item;
 }
 
 export async function fetchLegalUpdates(range?: string): Promise<LegalUpdate[]> {
@@ -30,29 +55,20 @@ export async function fetchLegalUpdates(range?: string): Promise<LegalUpdate[]> 
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     
     if (!Array.isArray(data)) {
       console.warn('API zwróciło nieprawidłowy format danych:', data);
       return [];
     }
     
-    return data.map((item: any) => ({
-      id: item.id,
-      eliUri: item.eliUri,
-      ingestMethod: item.ingestMethod,
-      title: item.title,
-      summary: item.summary,
-      date: item.date,
-      impact: item.impact,
-      category: item.category,
-      legalStatus: item.legalStatus,
-      officialRationale: item.officialRationale,
-      sourceUrl: item.sourceUrl
-    }));
-  } catch (error: any) {
-    console.error('API Error:', error);
-    if (error.message?.includes('Failed to fetch')) {
+    return data
+      .map(mapToLegalUpdate)
+      .filter((item): item is LegalUpdate => item !== null);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('API Error:', errorMessage);
+    if (errorMessage.includes('Failed to fetch')) {
       throw new Error('Błąd połączenia. Backend nie działa lub jest niedostępny na porcie 5554.');
     }
     throw error;
@@ -74,28 +90,19 @@ export async function fetchELIUpdates(range?: string, source?: string): Promise<
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     
     if (!Array.isArray(data)) {
       console.warn('API zwróciło nieprawidłowy format danych:', data);
       return [];
     }
     
-    return data.map((item: any) => ({
-      id: item.id,
-      eliUri: item.eliUri,
-      ingestMethod: item.ingestMethod,
-      title: item.title,
-      summary: item.summary,
-      date: item.date,
-      impact: item.impact,
-      category: item.category,
-      legalStatus: item.legalStatus,
-      officialRationale: item.officialRationale,
-      sourceUrl: item.sourceUrl
-    }));
-  } catch (error: any) {
-    console.error('ELI API Error:', error);
+    return data
+      .map(mapToLegalUpdate)
+      .filter((item): item is LegalUpdate => item !== null);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('ELI API Error:', errorMessage);
     throw error;
   }
 }
@@ -111,27 +118,18 @@ export async function fetchRSSUpdates(range?: string): Promise<LegalUpdate[]> {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     
     if (!Array.isArray(data)) {
       return [];
     }
     
-    return data.map((item: any) => ({
-      id: item.id,
-      eliUri: item.eliUri,
-      ingestMethod: item.ingestMethod,
-      title: item.title,
-      summary: item.summary,
-      date: item.date,
-      impact: item.impact,
-      category: item.category,
-      legalStatus: item.legalStatus,
-      officialRationale: item.officialRationale,
-      sourceUrl: item.sourceUrl
-    }));
-  } catch (error: any) {
-    console.error('RSS API Error:', error);
+    return data
+      .map(mapToLegalUpdate)
+      .filter((item): item is LegalUpdate => item !== null);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('RSS API Error:', errorMessage);
     throw error;
   }
 }
@@ -147,27 +145,18 @@ export async function fetchNFZUpdates(range?: string): Promise<LegalUpdate[]> {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     
     if (!Array.isArray(data)) {
       return [];
     }
     
-    return data.map((item: any) => ({
-      id: item.id,
-      eliUri: item.eliUri,
-      ingestMethod: item.ingestMethod,
-      title: item.title,
-      summary: item.summary,
-      date: item.date,
-      impact: item.impact,
-      category: item.category,
-      legalStatus: item.legalStatus,
-      officialRationale: item.officialRationale,
-      sourceUrl: item.sourceUrl
-    }));
-  } catch (error: any) {
-    console.error('NFZ API Error:', error);
+    return data
+      .map(mapToLegalUpdate)
+      .filter((item): item is LegalUpdate => item !== null);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('NFZ API Error:', errorMessage);
     throw error;
   }
 }
@@ -198,9 +187,10 @@ export async function exportUpdates(ids: string[]): Promise<string> {
     }
     
     return text;
-  } catch (error: any) {
-    console.error('Export Error:', error);
-    if (error.message?.includes('Failed to fetch')) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Export Error:', errorMessage);
+    if (errorMessage.includes('Failed to fetch')) {
       throw new Error('Błąd połączenia z backendem podczas eksportu.');
     }
     throw error;

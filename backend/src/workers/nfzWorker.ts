@@ -50,7 +50,17 @@ export class NFZWorker {
       console.log(`${'═'.repeat(60)}\n`);
 
       // Pobierz dane z scrapera NFZ
-      const nfzData = await scrapeNFZ();
+      let nfzData: LegalFact[] = [];
+      try {
+        nfzData = await scrapeNFZ();
+      } catch (scrapeError: any) {
+        console.error('❌ NFZ Scraper failed:', scrapeError.message);
+        nfzData = [];
+      }
+
+      if (nfzData.length === 0) {
+        console.log('⚠️  NFZ Worker: Brak danych - skraper zwrócił pustą listę');
+      }
       
       // Zapisz do bazy z deduplikacją
       let successCount = 0;
@@ -101,6 +111,9 @@ export class NFZWorker {
       if (errorCount > 0) {
         console.log(`⚠️  [${endTimestamp}] NFZ Worker: CZĘŚCIOWY SUKCES`);
         console.log(`   📊 Zapisano: ${successCount}/${nfzData.length} (${errorCount} błędów)`);
+      } else if (successCount === 0) {
+        console.log(`⚪ [${endTimestamp}] NFZ Worker: BEZ ZMIAN`);
+        console.log(`   📊 Dane: ${nfzData.length} dokumentów`);
       } else {
         console.log(`✅ [${endTimestamp}] NFZ Worker: SUKCES`);
         console.log(`   📊 Zapisano: ${nfzData.length} dokumentów`);
