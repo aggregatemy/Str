@@ -1,0 +1,22 @@
+{
+  "DevExtremeDocuments": {
+    "data": [
+      {
+        "Id": 12345,
+        "InstitutionId": 4,
+        "Title": "Zarządzenie Nr 100/2024/DSOZ w sprawie wytycznych",
+        "Subject": "Wytyczne dotyczące realizacji świadczeń zdrowotnych",
+        "Date": "2024-01-15",
+        "Type": "Zarządzenie Prezesa NFZ"
+      },
+      {
+        "Id": 12346,
+        "InstitutionId": 4,
+        "Title": "Zarządzenie Nr 101/2024/DSOZ w sprawie kontraktowania",
+        "Subject": "Zasady kontraktowania świadczeń zdrowotnych na rok 2024",
+        "Date": "2024-01-16",
+        "Type": "Zarządzenie Prezesa NFZ"
+      }
+    ]
+  }
+}
